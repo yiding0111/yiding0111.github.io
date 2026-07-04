@@ -59,6 +59,13 @@
   #tL{left:10px;} #tR{left:74px;}
   #tJ{right:10px;width:66px;height:66px;font-size:17px;letter-spacing:3px;}
   #tD{right:88px;width:44px;height:44px;font-size:18px;}
+  #tF{right:20px;bottom:86px;width:50px;height:50px;font-size:20px;}
+
+  /* settings rows */
+  .srow{display:flex;align-items:center;gap:8px;margin:7px 0;flex-wrap:wrap;justify-content:center;}
+  .srow .lb{width:96px;text-align:right;font-size:13px;color:var(--bone-dim);flex:none;}
+  .srow button{padding:5px 11px;font-size:12px;letter-spacing:1px;}
+  .srow button.on{background:var(--pink);}
   @media (max-width:640px){
     #wrap{padding:8px 4px 20px;}
     header{margin-bottom:6px;}
@@ -105,6 +112,7 @@
       <div class="tbtn" id="tL">◀</div>
       <div class="tbtn" id="tR">▶</div>
       <div class="tbtn" id="tD">▼</div>
+      <div class="tbtn" id="tF" style="display:none;">🔥</div>
       <div class="tbtn" id="tJ">跳</div>
     </div>
 
@@ -120,6 +128,14 @@
       </div>
       <div class="big" id="bestLine"></div>
       <div class="btns" id="lvlBtns"></div>
+      <div class="btns"><button id="btnSet">游 戏 设 置</button></div>
+    </div>
+
+    <div class="overlay hidden" id="setOv">
+      <h2 style="font-size:24px;letter-spacing:6px;">设 置</h2>
+      <div id="setRows"></div>
+      <div class="sub" style="margin-top:8px;">改动即时保存 · 新开一关后生效</div>
+      <div class="btns"><button id="setClose" class="pinkbtn">返 回</button></div>
     </div>
 
     <div class="overlay hidden" id="clearOv">
@@ -131,7 +147,10 @@
     <div class="overlay hidden" id="overOv">
       <h2 style="color:#d05050">睡 过 头 了</h2>
       <div class="sub" id="overSub"></div>
-      <div class="btns"><button id="btnAgain" class="pinkbtn">再 来 一 次</button></div>
+      <div class="btns">
+        <button id="btnAgain" class="pinkbtn">重 玩 本 关</button>
+        <button id="btnTitle2">回 标 题</button>
+      </div>
     </div>
 
     <div class="overlay hidden" id="endOv">
@@ -234,6 +253,7 @@ var LEVELS=[
     set(G,47,9,'d');
     set(G,50,7,'B');set(G,51,7,'?');set(G,52,7,'B');
     set(G,56,9,'g');set(G,60,9,'d');
+    set(G,68,7,'D');
     set(G,64,9,'#');set(G,65,9,'#');set(G,65,8,'#');set(G,66,9,'#');set(G,66,8,'#');set(G,66,7,'#');
     set(G,78,4,'b');
     set(G,82,7,'G');
@@ -279,6 +299,7 @@ var LEVELS=[
     set(G,36,9,'d');
     row(G,40,42,9,'^');
     set(G,45,7,'M');
+    set(G,52,7,'D');
     set(G,48,4,'b');
     row(G,64,70,5,'B');row(G,66,68,3,'o');
     set(G,72,9,'g');set(G,75,9,'d');
@@ -312,6 +333,7 @@ var LEVELS=[
     set(G,30,7,'B');set(G,31,7,'?');set(G,32,7,'P');set(G,33,7,'B');
     set(G,37,9,'d');set(G,40,9,'g');
     row(G,44,46,9,'^');
+    set(G,48,7,'D');
     row(G,56,58,7,'-');row(G,61,63,5,'-');row(G,62,62,3,'o');
     set(G,66,3,'b');
     set(G,69,6,'M');
@@ -336,7 +358,7 @@ var LEVELS=[
     row(G,13,14,8,'o');
     row(G,22,24,9,'^');
     set(G,27,5,'b');
-    set(G,30,7,'?');set(G,31,7,'M');
+    set(G,30,7,'?');set(G,31,7,'M');set(G,33,7,'D');
     set(G,34,9,'d');set(G,37,9,'g');
     row(G,46,48,7,'-');row(G,51,53,5,'-');
     set(G,56,3,'b');
@@ -361,6 +383,7 @@ var LEVELS=[
     set(G,2,9,'S');
     set(G,8,7,'P');
     row(G,12,14,8,'o');
+    set(G,16,7,'D');
     row(G,26,28,8,'o');
     set(G,40,7,'G');
   }}
@@ -368,12 +391,45 @@ var LEVELS=[
 
 /* ---------- state ---------- */
 var rooms,cur,roomKey,lvl,lvlIdx=0;
-var pl,cam,parts,pops,bolts,boss,bossActive;
+var pl,cam,parts,pops,bolts,fireballs,boss,bossActive;
 var lives=3,ck=0,deaths=0,totalCk=0;
 var paused=false,phase='title',freezeT=0,vicT=0;
 var unlock=0,bestClear=false;
 try{unlock=parseInt(localStorage.getItem('azhu-unlock')||'0',10)||0;}catch(e){}
 try{bestClear=localStorage.getItem('azhu-clear')==='1';}catch(e){}
+
+/* ---------- settings ---------- */
+var SET={lives:3,den:1,esp:1,inf:false,bossHp:3};
+try{
+  var _s=JSON.parse(localStorage.getItem('azhu-set')||'{}');
+  for(var _k in SET)if(_s[_k]!==undefined)SET[_k]=_s[_k];
+}catch(e){}
+function saveSet(){try{localStorage.setItem('azhu-set',JSON.stringify(SET));}catch(e){}}
+var SET_DEF=[
+  {k:'lives',lb:'初始生命',opts:[[3,'3 条'],[5,'5 条'],[9,'9 条']]},
+  {k:'inf',lb:'无限生命',opts:[[false,'关'],[true,'开 (休闲)']]},
+  {k:'den',lb:'敌人数量',opts:[[0.5,'稀少'],[1,'标准'],[1.5,'疯狂']]},
+  {k:'esp',lb:'敌人速度',opts:[[0.75,'慢悠悠'],[1,'标准'],[1.25,'狂暴']]},
+  {k:'bossHp',lb:'Boss 血量',opts:[[2,'脆皮'],[3,'标准'],[5,'硬核']]}
+];
+function buildSet(){
+  var box=document.getElementById('setRows');box.innerHTML='';
+  SET_DEF.forEach(function(def){
+    var row=document.createElement('div');row.className='srow';
+    var lb=document.createElement('span');lb.className='lb';lb.textContent=def.lb;
+    row.appendChild(lb);
+    def.opts.forEach(function(op){
+      var b=document.createElement('button');
+      b.textContent=op[1];
+      if(SET[def.k]===op[0])b.classList.add('on');
+      b.addEventListener('click',function(){
+        SET[def.k]=op[0];saveSet();buildSet();
+      });
+      row.appendChild(b);
+    });
+    box.appendChild(row);
+  });
+}
 
 function parseRoom(w,build,pipeDefs){
   var G=makeGrid(w);build(G);
@@ -391,6 +447,17 @@ function parseRoom(w,build,pipeDefs){
         if(pipeDefs[pd].c===c)room.pipes.push({c:c,r:r,to:pipeDefs[pd].to,spawn:pipeDefs[pd].spawn});
     }
   }
+  // difficulty: enemy density & speed
+  if(SET.den<1){
+    room.en=room.en.filter(function(e,i){return i%2===0;});
+  } else if(SET.den>1){
+    var extra=[];
+    room.en.forEach(function(e,i){
+      if(i%2===0){var c2=JSON.parse(JSON.stringify(e));c2.x+=22;extra.push(c2);}
+    });
+    room.en=room.en.concat(extra);
+  }
+  room.en.forEach(function(e){e.vx*=SET.esp;});
   return room;
 }
 
@@ -400,10 +467,10 @@ function loadLevel(i){
   rooms={main:parseRoom(lvl.w,lvl.build,pdefs.main)};
   if(lvl.sub)rooms.sub=parseRoom(lvl.sub.w,lvl.sub.build,pdefs.sub);
   roomKey='main';cur=rooms.main;
-  parts=[];pops=[];bolts=[];boss=null;bossActive=false;
+  parts=[];pops=[];bolts=[];fireballs=[];boss=null;bossActive=false;
   var sp=cur.spawn;
   pl={x:sp[0]*TS+3,y:sp[1]*TS,w:10,h:12,vx:0,vy:0,dir:1,onG:false,big:false,
-      invulT:0,shield:false,speedT:0,invT:0,
+      invulT:0,shield:false,speedT:0,invT:0,dog:false,fireCd:0,fHeld:false,
       coyote:0,jbuf:0,jheld:false,animT:0,idleT:0,bubT:0};
   cam=clamp(pl.x-120,0,cur.LW*TS-VW);
   document.getElementById('lvlName').textContent=lvl.name;
@@ -416,8 +483,8 @@ function tile(c,r){
   if(r<0||r>=ROWS)return '.';
   return cur.grid[r][c];
 }
-function solidCh(ch){return ch==='#'||ch==='B'||ch==='?'||ch==='P'||ch==='M'||ch==='G'||ch==='J'||ch==='U'||ch==='p'||ch==='i'||ch==='I';}
-function itemBlock(ch){return ch==='P'||ch==='M'||ch==='G'||ch==='J';}
+function solidCh(ch){return ch==='#'||ch==='B'||ch==='?'||ch==='P'||ch==='M'||ch==='G'||ch==='J'||ch==='D'||ch==='U'||ch==='p'||ch==='i'||ch==='I';}
+function itemBlock(ch){return ch==='P'||ch==='M'||ch==='G'||ch==='J'||ch==='D';}
 function solidAt(px,py){return solidCh(tile(Math.floor(px/TS),Math.floor(py/TS)));}
 
 /* ---------- physics ---------- */
@@ -463,8 +530,8 @@ function bumpBlock(c,r){
     addCookie(1);pops.push({x:c*TS+8,y:r*TS-2,t:0});sfx.coin();
   } else if(itemBlock(ch)){
     cur.grid[r][c]='U';cur.bumps[c+','+r]=0.001;
-    var type={P:'bun',M:'tea',G:'gum',J:'gold'}[ch];
-    cur.it.push({type:type,x:c*TS+2,y:r*TS-13,w:12,h:12,vx:35,vy:0});
+    var type={P:'bun',M:'tea',G:'gum',J:'gold',D:'dog'}[ch];
+    cur.it.push({type:type,x:c*TS+2,y:r*TS-13,w:12,h:12,vx:type==='dog'?30:35,vy:0});
     sfx.power();
   } else if(ch==='B'){
     if(pl.big){
@@ -504,10 +571,22 @@ function tryPipe(){
 
 /* ---------- boss 王文丹 ---------- */
 function spawnBoss(){
-  boss={x:34*TS,y:40,w:20,h:24,hp:3,st:'hover',t:0,vx:0,vy:0,castT:2,flashT:0,dir:-1};
+  boss={x:34*TS,y:40,w:20,h:24,hp:SET.bossHp,st:'hover',t:0,vx:0,vy:0,castT:2,flashT:0,dir:-1};
   bossActive=true;
   toast('黑魔仙 王文丹 出现了！！');
   sfx.cast();
+}
+function damageBoss(){
+  boss.hp--;boss.flashT=0.8;sfx.bossHurt();addCookie(5);
+  if(boss.hp<=0){
+    boss.st='dead';boss.t=0;sfx.bossDie();
+    toast('王文丹：「可恶……本魔仙记住你了！」');
+    for(var j=0;j<8;j++)parts.push({x:boss.x+10,y:boss.y+10,
+      vx:(Math.random()-0.5)*120,vy:-60-Math.random()*80,t:0,c:'#a05bd0'});
+  } else {
+    boss.st='rise';boss.t=0;
+    toast('王文丹掉了一撮头发！还剩 '+boss.hp+' 滴血');
+  }
 }
 function updateBoss(dt){
   if(!boss)return;
@@ -523,7 +602,7 @@ function updateBoss(dt){
       boss.castT=2.2;
       var bx=boss.x+boss.w/2,by=boss.y+boss.h/2;
       var ang=Math.atan2(pl.y+6-by,pl.x+5-bx);
-      bolts.push({x:bx,y:by,vx:Math.cos(ang)*92,vy:Math.sin(ang)*92-18,t:0});
+      bolts.push({x:bx,y:by,vx:Math.cos(ang)*92*SET.esp,vy:Math.sin(ang)*92*SET.esp-18,t:0});
       sfx.cast();
     }
     if(boss.t>5.5){boss.st='dive';boss.t=0;boss.tx=pl.x;}
@@ -549,17 +628,8 @@ function updateBoss(dt){
   // player interaction
   if(rectHit(pl,boss)){
     if(boss.st==='stun'&&pl.vy>40&&pl.y+pl.h-boss.y<boss.h*0.6){
-      boss.hp--;boss.flashT=0.8;pl.vy=-170;sfx.bossHurt();
-      addCookie(5);
-      if(boss.hp<=0){
-        boss.st='dead';boss.t=0;sfx.bossDie();
-        toast('王文丹：「可恶……本魔仙记住你了！」');
-        for(var j=0;j<8;j++)parts.push({x:boss.x+10,y:boss.y+10,
-          vx:(Math.random()-0.5)*120,vy:-60-Math.random()*80,t:0,c:'#a05bd0'});
-      } else {
-        boss.st='rise';boss.t=0;
-        toast('王文丹掉了一撮头发！还剩 '+boss.hp+' 滴血');
-      }
+      pl.vy=-170;
+      damageBoss();
     } else if(boss.st!=='dead'&&pl.invT<=0&&boss.flashT<=0){
       hurt();
     }
@@ -596,11 +666,12 @@ function update(dt){
     pl.vy=clamp(pl.vy+GRAV*dt,-999,MAXFALL);
     pl.y+=pl.vy*dt;pl.animT+=dt;
     if(pl.y>VH+80){
-      lives--;updateHUD();
+      if(!SET.inf)lives--;
+      updateHUD();
       if(lives<=0){
         phase='over';sfx.over();show('overOv');
         document.getElementById('overSub').textContent=
-          '阿猪倒在了'+lvl.short+'……但被窝还在月球上等它。';
+          '阿猪倒在了'+lvl.short+'……别灰心，可以直接重玩这一关。';
       } else {loadLevel(lvlIdx);phase='play';}
     }
     return;
@@ -694,6 +765,11 @@ function update(dt){
         sfx.power();pl.shield=true;toast('吹了个泡泡当护盾');
       } else if(it.type==='gold'){
         sfx.star();pl.invT=6;toast('金菠萝！！无敌了！！');
+      } else if(it.type==='dog'){
+        if(!pl.dog){
+          pl.dog=true;sfx.power();
+          toast('阿狗来了！按 F 吐火球 🔥');
+        } else {addCookie(5);toast('阿狗已经在了，+5 曲奇');}
       }
       updateHUD();
     }
@@ -719,7 +795,7 @@ function update(dt){
       }
       if(m.k==='snail'&&m.st==='shell'){
         m.t+=dt;
-        if(m.t>6&&Math.abs(pl.x-m.x)>24){m.st='walk';m.vx=pl.x<m.x?20:-20;}
+        if(m.t>6&&Math.abs(pl.x-m.x)>24){m.st='walk';m.vx=(pl.x<m.x?20:-20)*SET.esp;}
       }
       // sliding shell kills others
       if(sliding){
@@ -760,6 +836,59 @@ function update(dt){
         else if(pl.invulT<=0)hurt();
       }
     }
+  }
+
+  // dog fireballs
+  if(pl.dog){
+    pl.fireCd-=dt;
+    var F=keys.f||keys.j;
+    if(F&&!pl.fHeld&&pl.fireCd<=0){
+      pl.fireCd=0.5;
+      fireballs.push({x:pl.x+(pl.dir>0?13:-5),y:pl.y+pl.h-6,vx:pl.dir*150,vy:-30,t:0});
+      tone(500,.06,0,'square',.05);tone(700,.05,.04,'square',.04);
+      pl.idleT=0;
+    }
+    pl.fHeld=F;
+  }
+  for(var fb=fireballs.length-1;fb>=0;fb--){
+    var f2=fireballs[fb];
+    f2.t+=dt;f2.vy+=500*dt;
+    f2.x+=f2.vx*dt;f2.y+=f2.vy*dt;
+    var gone=false;
+    if(f2.t>2.4||f2.x<cam-30||f2.x>cam+VW+30||f2.y>VH+20)gone=true;
+    else if(f2.vy>0&&solidAt(f2.x,f2.y+3)){f2.y=Math.floor((f2.y+3)/TS)*TS-3;f2.vy=-150;}
+    else if(solidAt(f2.x+(f2.vx>0?3:-3),f2.y)){gone=true;}
+    if(!gone){
+      // vs enemies
+      for(var em=cur.en.length-1;em>=0;em--){
+        var m2=cur.en[em];
+        if(m2.dead)continue;
+        if(f2.x>m2.x-3&&f2.x<m2.x+m2.w+3&&f2.y>m2.y-3&&f2.y<m2.y+m2.h+3){
+          if(m2.k==='snail'&&m2.st!=='walk')cur.en.splice(em,1);
+          else {m2.dead=1;m2.sq=0;}
+          addCookie(2);sfx.stomp();gone=true;
+          for(var pp=0;pp<3;pp++)parts.push({x:f2.x,y:f2.y,vx:(Math.random()-.5)*70,vy:-50*Math.random(),t:0.5,c:'#e07b2a'});
+          break;
+        }
+      }
+      // vs boss bolts
+      if(!gone)for(var bb=bolts.length-1;bb>=0;bb--){
+        var bo=bolts[bb];
+        if(Math.abs(f2.x-bo.x)<6&&Math.abs(f2.y-bo.y)<6){
+          bolts.splice(bb,1);gone=true;sfx.pop();
+          parts.push({x:bo.x,y:bo.y,vx:0,vy:-40,t:0.4,c:'#a05bd0'});
+          break;
+        }
+      }
+      // vs boss
+      if(!gone&&boss&&boss.st!=='dead'&&
+         f2.x>boss.x-2&&f2.x<boss.x+boss.w+2&&f2.y>boss.y-2&&f2.y<boss.y+boss.h+2){
+        gone=true;
+        if(boss.st==='stun'&&boss.flashT<=0)damageBoss();
+        else {sfx.pop();parts.push({x:f2.x,y:f2.y,vx:0,vy:-30,t:0.4,c:'#e07b2a'});}
+      }
+    }
+    if(gone)fireballs.splice(fb,1);
   }
 
   // boss
@@ -821,6 +950,11 @@ function hurt(){
   if(pl.shield){
     pl.shield=false;pl.invulT=1.2;sfx.pop();toast('泡泡「啪」地挡了一下！');updateHUD();return;
   }
+  if(pl.dog){
+    pl.dog=false;pl.invulT=1.5;sfx.hurt();toast('阿狗被吓跑了！汪——');
+    for(var i=0;i<4;i++)parts.push({x:pl.x+5,y:pl.y+8,vx:(Math.random()-.5)*90,vy:-60*Math.random(),t:0.4,c:'#b98a5e'});
+    updateHUD();return;
+  }
   if(pl.big){pl.big=false;pl.h=12;pl.y+=4;pl.invulT=2;sfx.hurt();toast('阿猪变小了！');}
   else die();
 }
@@ -833,14 +967,17 @@ function die(){
 
 /* ---------- HUD ---------- */
 function updateHUD(){
-  document.getElementById('livesN').textContent='×'+lives;
+  document.getElementById('livesN').textContent='×'+(SET.inf?'∞':lives);
   document.getElementById('ckN').textContent='×'+ck;
+  var tf=document.getElementById('tF');
+  if(tf)tf.style.display=(isTouch&&pl&&pl.dog)?'flex':'none';
   updateBuffHUD();
 }
 var buffEl=document.getElementById('buffs');
 function updateBuffHUD(){
   var s='';
   if(pl){
+    if(pl.dog)s+='<span>阿狗🔥</span>';
     if(pl.shield)s+='<span>泡泡</span>';
     if(pl.speedT>0)s+='<span>奶茶 '+Math.ceil(pl.speedT)+'</span>';
     if(pl.invT>0)s+='<span>无敌 '+Math.ceil(pl.invT)+'</span>';
@@ -856,12 +993,12 @@ function toast(msg){
   while(box.children.length>3)box.firstChild.remove();
 }
 function show(id){
-  ['titleOv','clearOv','overOv','endOv','pauseOv'].forEach(function(o){
+  ['titleOv','clearOv','overOv','endOv','pauseOv','setOv'].forEach(function(o){
     document.getElementById(o).classList.toggle('hidden',o!==id);
   });
 }
 function hideAll(){
-  ['titleOv','clearOv','overOv','endOv','pauseOv'].forEach(function(o){
+  ['titleOv','clearOv','overOv','endOv','pauseOv','setOv'].forEach(function(o){
     document.getElementById(o).classList.add('hidden');
   });
 }
@@ -900,7 +1037,7 @@ function render(t){
     drawCookie(p.x-cam-4,p.y-4);
     g.globalAlpha=1;
   });
-  cur.it.forEach(function(it){drawItem(it);});
+  cur.it.forEach(function(it){drawItem(it,t);});
   parts.forEach(function(p){R(g,p.x-cam,p.y,3,3,p.c||'#c9764a');});
   cur.en.forEach(function(m){
     if(m.x<cam-20||m.x>cam+VW+20)return;
@@ -911,13 +1048,24 @@ function render(t){
   bolts.forEach(function(b){
     disc(g,b.x-cam,b.y,3,'#a05bd0');disc(g,b.x-cam,b.y,1,'#e0c0f0');
   });
+  fireballs.forEach(function(f){
+    var fx=f.x-cam;
+    g.globalAlpha=.5;disc(g,fx-f.vx*0.02,f.y,2,'#f2c14b');g.globalAlpha=1;
+    disc(g,fx,f.y,3,'#e07b2a');
+    disc(g,fx,f.y,1,Math.floor(t/80)%2?'#fdf3c9':'#f2c14b');
+  });
   if(boss)drawBoss(t);
 
   // player
   var blink=pl.invulT>0&&Math.floor(t/80)%2;
   if(!blink){
     if(phase==='victory')drawPigVictory(pl.x-cam,pl.y,t);
-    else drawPig(pl.x-cam,pl.y,pl.dir,pl.big,t,phase==='dead');
+    else {
+      if(pl.dog&&phase!=='dead'){
+        drawDogM(pl.x-cam,pl.y,pl.dir,t);
+        drawPig(pl.x-cam,pl.y-7,pl.dir,pl.big,t,false);
+      } else drawPig(pl.x-cam,pl.y,pl.dir,pl.big,t,phase==='dead');
+    }
   }
   // star rainbow
   if(pl.invT>0&&!blink){
@@ -1176,6 +1324,12 @@ function drawTile(ch,x,y,c,r,t){
       R(g,x+6,y+7,1,4,'#b3813f');R(g,x+9,y+7,1,4,'#b3813f');
       if(Math.floor(t/200)%2)R(g,x+12,y+3,2,2,'#ffffff');
       break;
+    case 'D':
+      qblock(x,y,'#d9c9a8','#8a7a5a','#e8dcc2','#bcac88',t);
+      R(g,x+5,y+7,6,2,'#f5f2ea');
+      disc(g,x+4,y+6,2,'#f5f2ea');disc(g,x+4,y+10,2,'#f5f2ea');
+      disc(g,x+12,y+6,2,'#f5f2ea');disc(g,x+12,y+10,2,'#f5f2ea');
+      break;
     case 'U':
       R(g,x,y,TS,TS,'#9a8f7a');R(g,x,y,TS,2,'#b0a68f');
       R(g,x,y+14,TS,2,'#6e6552');
@@ -1392,7 +1546,7 @@ function drawCookie(x,y){
   R(g,x+1,y+1,6,6,'#d9a95c');
   R(g,x+2,y+2,1,1,'#7a5230');R(g,x+5,y+3,1,1,'#7a5230');R(g,x+3,y+5,1,1,'#7a5230');
 }
-function drawItem(it){
+function drawItem(it,t){
   var x=it.x-cam,y=it.y;
   if(it.type==='bun')drawBun(x,y);
   else if(it.type==='gold'){
@@ -1411,6 +1565,34 @@ function drawItem(it){
     R(g,x+3,y+3,2,2,'#ffffff');
     g.globalAlpha=.4;disc(g,x+6,y+6,6,'#f8d3dc');g.globalAlpha=1;
   }
+  else if(it.type==='dog'){
+    drawDogM(x-1,y+2,it.vx>0?1:-1,t);
+  }
+}
+function drawDogM(x,y,dir,t){
+  g.save();
+  g.translate(x+8,y+6);
+  if(dir<0)g.scale(-1,1);
+  g.translate(-8,-6);
+  var run=Math.floor(t/100)%2;
+  // body
+  R(g,0,2,14,7,'#8a6a4a');R(g,1,3,12,5,'#f5ead8');
+  // head
+  R(g,10,-3,7,7,'#8a6a4a');R(g,11,-2,5,5,'#f5ead8');
+  // ears
+  R(g,11,-5,2,3,'#b98a5e');R(g,15,-5,2,3,'#b98a5e');
+  // patch + eye + nose
+  R(g,13,-2,3,2,'#b98a5e');
+  R(g,13,0,1,1,'#3a2a30');R(g,16,1,1,2,'#3a2a30');
+  // mouth flame when just fired
+  if(pl&&pl.dog&&pl.fireCd>0.35){
+    R(g,17,2,3,2,'#e07b2a');R(g,18,1,2,1,'#f2c14b');
+  }
+  // curled tail
+  R(g,-2,0,2,2,'#b98a5e');R(g,-3,-2,2,2,'#b98a5e');
+  // legs
+  R(g,2+(run?1:0),9,2,3,'#8a6a4a');R(g,10-(run?1:0),9,2,3,'#8a6a4a');
+  g.restore();
 }
 function drawBun(x,y){
   R(g,x,y+3,12,8,'#b3813f');
@@ -1482,7 +1664,7 @@ try{
 }catch(e){}
 if(isTouch){
   document.getElementById('touch').classList.remove('hidden');
-  [['tL','ArrowLeft'],['tR','ArrowRight'],['tD','ArrowDown'],['tJ',' ']].forEach(function(pair){
+  [['tL','ArrowLeft'],['tR','ArrowRight'],['tD','ArrowDown'],['tJ',' '],['tF','f']].forEach(function(pair){
     var el=document.getElementById(pair[0]), k=pair[1];
     function press(e){
       if(e.cancelable)e.preventDefault();
@@ -1517,7 +1699,7 @@ document.getElementById('pauseBtn').addEventListener('click',function(){
   document.getElementById('pauseOv').classList.toggle('hidden',!paused);
 });
 function startLevel(i,fresh){
-  if(fresh){lives=3;ck=0;deaths=0;totalCk=0;}
+  if(fresh){lives=SET.lives;ck=0;deaths=0;totalCk=0;}
   loadLevel(i);
   phase='play';paused=false;hideAll();
   try{ac().resume();}catch(e){}
@@ -1537,9 +1719,18 @@ function buildLvlBtns(){
     bestClear?'你已经帮阿猪拿回过被窝了。再打一次黑魔仙也无妨。':(unlock>0?('已解锁到：'+LEVELS[Math.min(unlock,LEVELS.length-1)].short):'');
 }
 document.getElementById('btnNext').addEventListener('click',function(){startLevel(lvlIdx+1,false);});
-document.getElementById('btnAgain').addEventListener('click',function(){startLevel(0,true);});
+document.getElementById('btnAgain').addEventListener('click',function(){startLevel(lvlIdx,true);});
+document.getElementById('btnTitle2').addEventListener('click',function(){
+  buildLvlBtns();show('titleOv');phase='title';
+});
 document.getElementById('btnMenu').addEventListener('click',function(){
   bestClear=true;buildLvlBtns();show('titleOv');phase='title';
+});
+document.getElementById('btnSet').addEventListener('click',function(){
+  buildSet();show('setOv');
+});
+document.getElementById('setClose').addEventListener('click',function(){
+  show('titleOv');
 });
 
 /* ---------- debug hook ---------- */
