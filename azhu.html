@@ -1,0 +1,1570 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>阿猪大冒险 · 城市巡游</title>
+<style>
+  :root{
+    --night:#14162a; --night2:#1b1e36; --bone:#e8e2d0; --bone-dim:#b9b29c;
+    --pink:#f2b8c6; --pinkD:#d98aa0; --ink:#0d0b16;
+  }
+  html,body{margin:0;padding:0;background:var(--night);}
+  body{
+    color:var(--bone);font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+    background-image:radial-gradient(rgba(242,184,198,0.06) 1px,transparent 1px);
+    background-size:9px 9px;-webkit-user-select:none;user-select:none;
+  }
+  #wrap{max-width:1000px;margin:0 auto;padding:18px 10px 40px;}
+  header{text-align:center;margin-bottom:10px;}
+  .eyebrow{font-family:Consolas,monospace;font-size:10px;letter-spacing:4px;color:var(--pink);text-transform:uppercase;}
+  h1{font-family:"Noto Serif SC","SimSun",serif;font-size:26px;font-weight:900;margin:2px 0 0;letter-spacing:8px;text-indent:8px;}
+
+  #stage{position:relative;margin:0 auto;max-width:960px;border:4px solid var(--bone);
+    box-shadow:0 0 0 1px var(--ink),6px 7px 0 rgba(0,0,0,.5);background:#000;}
+  #game{display:block;width:100%;height:auto;image-rendering:pixelated;}
+
+  #hud{position:absolute;top:8px;left:10px;z-index:5;display:flex;gap:14px;align-items:center;
+    pointer-events:none;font-family:Consolas,monospace;font-size:15px;text-shadow:1px 1px 0 #000;}
+  #hud .it{display:flex;gap:5px;align-items:center;}
+  #hud canvas{width:24px;height:24px;image-rendering:pixelated;}
+  #buffs{display:flex;gap:6px;font-size:11px;}
+  #buffs span{background:rgba(13,11,22,.7);border:1px solid var(--pink);color:var(--pink);
+    padding:1px 6px;letter-spacing:1px;}
+  #lvlName{position:absolute;top:10px;right:12px;z-index:5;pointer-events:none;
+    font-family:Consolas,monospace;font-size:13px;color:var(--bone);text-shadow:1px 1px 0 #000;}
+  #toasts{position:absolute;top:40px;left:50%;transform:translateX(-50%);z-index:8;
+    display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;}
+  .toast{background:rgba(13,11,22,.88);border:2px solid var(--bone);color:var(--bone);
+    padding:3px 10px;font-size:12px;letter-spacing:1px;animation:tIn .18s ease;}
+  @keyframes tIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;}}
+  #btnRow{position:absolute;bottom:8px;right:8px;z-index:6;display:flex;gap:6px;}
+  button{background:var(--bone);color:var(--ink);border:3px solid var(--ink);
+    box-shadow:3px 3px 0 rgba(0,0,0,.5);font-family:"Microsoft YaHei",sans-serif;
+    font-size:12px;font-weight:bold;letter-spacing:2px;padding:6px 12px;cursor:pointer;}
+  button:hover{background:#fff;}
+  button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 rgba(0,0,0,.5);}
+  button:disabled{opacity:.4;cursor:default;}
+  button:focus-visible{outline:3px solid var(--pink);outline-offset:2px;}
+  button.pinkbtn{background:var(--pink);}
+  button.pinkbtn:hover{background:#f8cdd8;}
+
+  /* touch controls */
+  #touch{position:absolute;inset:0;z-index:15;pointer-events:none;}
+  .tbtn{position:absolute;bottom:10px;width:52px;height:52px;
+    background:rgba(232,226,208,.22);border:2px solid rgba(232,226,208,.55);
+    color:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;
+    font-size:22px;font-weight:bold;border-radius:10px;
+    pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent;
+    -webkit-user-select:none;user-select:none;}
+  .tbtn.on,.tbtn:active{background:rgba(242,184,198,.5);border-color:var(--pink);}
+  #tL{left:10px;} #tR{left:74px;}
+  #tJ{right:10px;width:66px;height:66px;font-size:17px;letter-spacing:3px;}
+  #tD{right:88px;width:44px;height:44px;font-size:18px;}
+  @media (max-width:640px){
+    #wrap{padding:8px 4px 20px;}
+    header{margin-bottom:6px;}
+    h1{font-size:20px;letter-spacing:5px;}
+    #btnRow{bottom:auto;top:34px;right:8px;}
+    .overlay h2{font-size:24px;letter-spacing:5px;}
+    .overlay .sub{font-size:11.5px;line-height:1.7;}
+  }
+
+  .overlay{position:absolute;inset:0;z-index:20;background:rgba(10,8,20,.9);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:14px;}
+  .overlay h2{font-family:"Noto Serif SC","SimSun",serif;font-size:32px;letter-spacing:9px;margin:0 0 8px;}
+  .overlay .sub{color:var(--bone-dim);font-size:13px;line-height:1.9;max-width:460px;}
+  .overlay .sub b{color:var(--pink);font-weight:normal;}
+  .overlay .big{font-size:15px;color:var(--pink);margin:10px 0 0;}
+  .overlay .btns{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;justify-content:center;}
+  .overlay button{font-size:14px;padding:9px 16px;}
+  #titlePig{width:120px;height:120px;image-rendering:pixelated;margin-bottom:6px;}
+  .hidden{display:none !important;}
+  footer{margin-top:14px;text-align:center;font-family:Consolas,monospace;font-size:10px;
+    letter-spacing:2px;color:rgba(232,226,208,.4);}
+</style>
+
+<div id="wrap">
+  <header>
+    <div class="eyebrow">A-zhu's grand tour · from Shenzhen to the Moon</div>
+    <h1>阿猪大冒险</h1>
+  </header>
+
+  <div id="stage">
+    <canvas id="game" width="320" height="180"></canvas>
+    <div id="hud">
+      <span class="it"><canvas id="icoPig" width="16" height="16"></canvas><span id="livesN">×3</span></span>
+      <span class="it"><canvas id="icoCk" width="16" height="16"></canvas><span id="ckN">×0</span></span>
+      <span id="buffs"></span>
+    </div>
+    <div id="lvlName"></div>
+    <div id="toasts"></div>
+    <div id="btnRow">
+      <button id="sndBtn" title="M">♪</button>
+      <button id="pauseBtn" title="P">暂停</button>
+    </div>
+    <div id="touch" class="hidden">
+      <div class="tbtn" id="tL">◀</div>
+      <div class="tbtn" id="tR">▶</div>
+      <div class="tbtn" id="tD">▼</div>
+      <div class="tbtn" id="tJ">跳</div>
+    </div>
+
+    <div class="overlay" id="titleOv">
+      <canvas id="titlePig" width="40" height="40"></canvas>
+      <h2>阿猪大冒险</h2>
+      <div class="sub">
+        黑魔仙<b>王文丹</b>偷走了阿猪的被窝，一路逃向月球。<br>
+        阿猪从<b>深圳</b>出发，途经<b>胡志明市、武汉、上海、广州</b>，只为拿回自己的被窝。<br><br>
+        <b>← → / A D</b> 跑动 · <b>空格 / W / ↑</b> 跳（按住更高）· <b>↓ / S</b> 钻水管<br>
+        踩鸭子和蜗牛 · 踢壳 · 顶砖块 · 100 曲奇 = 1 条命<br>
+        道具：<b>菠萝包</b>变大 · <b>奶茶</b>疾跑 · <b>泡泡糖</b>护盾 · <b>金菠萝</b>无敌
+      </div>
+      <div class="big" id="bestLine"></div>
+      <div class="btns" id="lvlBtns"></div>
+    </div>
+
+    <div class="overlay hidden" id="clearOv">
+      <h2 style="color:var(--pink)">通 关 ！</h2>
+      <div class="sub" id="clearSub"></div>
+      <div class="btns"><button id="btnNext" class="pinkbtn">下 一 站</button></div>
+    </div>
+
+    <div class="overlay hidden" id="overOv">
+      <h2 style="color:#d05050">睡 过 头 了</h2>
+      <div class="sub" id="overSub"></div>
+      <div class="btns"><button id="btnAgain" class="pinkbtn">再 来 一 次</button></div>
+    </div>
+
+    <div class="overlay hidden" id="endOv">
+      <h2 style="color:var(--pink)">晚 安 ，阿 猪</h2>
+      <div class="sub" id="endSub"></div>
+      <div class="btns"><button id="btnMenu" class="pinkbtn">回 到 标 题</button></div>
+    </div>
+
+    <div class="overlay hidden" id="pauseOv" style="background:rgba(10,8,20,.72)">
+      <h2 style="font-size:22px;letter-spacing:6px;">暂 停</h2>
+      <div class="sub">阿猪掏出一本书，看了两页。<br>按 P 继续 · ↓ 可以钻进某些水管 · 壳可以踢</div>
+    </div>
+  </div>
+
+  <footer>A-ZHU JUST WANTS HIS BED BACK · 深圳 → 西贡 → 武汉 → 上海 → 广州 → 月球</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- helpers ---------- */
+function clamp(v,a,b){return v<a?a:(v>b?b:v);}
+function R(g,x,y,w,h,c){g.fillStyle=c;g.fillRect(x|0,y|0,w|0,h|0);}
+function disc(g,cx,cy,r,c){cx|=0;cy|=0;for(var y=-r;y<=r;y++){var w=Math.floor(Math.sqrt(r*r-y*y));R(g,cx-w,cy+y,2*w+1,1,c);}}
+function hash2(x,y){var h=(x*374761393+y*668265263)|0;h=(h^(h>>13))|0;h=Math.imul(h,1274126177);h=(h^(h>>16))>>>0;return h/4294967296;}
+
+/* ---------- audio ---------- */
+var AC=null,muted=false;
+try{muted=localStorage.getItem('azhu-muted')==='1';}catch(e){}
+function ac(){if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();return AC;}
+function tone(f,d,delay,type,v){
+  if(muted)return;
+  try{
+    var a=ac(),o=a.createOscillator(),g=a.createGain();
+    o.type=type||'square';o.frequency.value=f;
+    var t0=a.currentTime+(delay||0);
+    g.gain.setValueAtTime(v||0.04,t0);
+    g.gain.exponentialRampToValueAtTime(0.0008,t0+d);
+    o.connect(g);g.connect(a.destination);o.start(t0);o.stop(t0+d+0.02);
+  }catch(e){}
+}
+var sfx={
+  jump:function(){tone(320,.1,0,'square',.045);tone(480,.08,.03,'square',.035);},
+  coin:function(){tone(988,.06,0,'square',.045);tone(1319,.12,.06,'square',.045);},
+  stomp:function(){tone(200,.08,0,'square',.06);tone(130,.08,.05,'square',.05);},
+  kick:function(){tone(520,.05,0,'square',.05);tone(760,.06,.04,'square',.05);},
+  bump:function(){tone(160,.06,0,'square',.05);},
+  brk:function(){tone(240,.05,0,'sawtooth',.05);tone(150,.07,.04,'sawtooth',.05);},
+  power:function(){[392,494,587,784].forEach(function(f,i){tone(f,.09,i*.07,'square',.045);});},
+  star:function(){[523,659,784,1047,1319].forEach(function(f,i){tone(f,.08,i*.06,'triangle',.05);});},
+  pipe:function(){tone(400,.1,0,'square',.05);tone(300,.1,.08,'square',.05);tone(220,.14,.16,'square',.05);},
+  hurt:function(){tone(220,.12,0,'sawtooth',.06);tone(150,.15,.08,'sawtooth',.05);},
+  pop:function(){tone(700,.05,0,'triangle',.05);tone(500,.05,.04,'triangle',.04);},
+  die:function(){[494,466,440,392,330,262].forEach(function(f,i){tone(f,.12,i*.09,'square',.05);});},
+  win:function(){[523,587,659,784,880,1047].forEach(function(f,i){tone(f,.12,i*.09,'square',.05);});},
+  life:function(){[659,784,1047,1319].forEach(function(f,i){tone(f,.1,i*.07,'triangle',.05);});},
+  over:function(){[330,262,196,131].forEach(function(f,i){tone(f,.3,i*.24,'triangle',.06);});},
+  cast:function(){tone(620,.12,0,'sawtooth',.05);tone(520,.1,.08,'sawtooth',.04);},
+  bossHurt:function(){tone(180,.15,0,'sawtooth',.07);tone(120,.18,.1,'sawtooth',.06);},
+  bossDie:function(){[880,784,659,523,392,262,196].forEach(function(f,i){tone(f,.14,i*.1,'sawtooth',.05);});}
+};
+
+/* ---------- constants ---------- */
+var TS=16, VW=320, VH=180, ROWS=12;
+var GRAV=640, JUMPV=228, MAXFALL=250, MOVE=95, ACC=700, FRIC=600;
+function GR(){return lvl&&lvl.moon?GRAV*0.55:GRAV;}
+
+/* ---------- level authoring ---------- */
+function makeGrid(w){var G=[];for(var r=0;r<ROWS;r++){G.push([]);for(var c=0;c<w;c++)G[r].push('.');}return G;}
+function set(G,c,r,ch){if(r>=0&&r<ROWS&&c>=0&&c<G[0].length)G[r][c]=ch;}
+function row(G,c0,c1,r,ch){for(var c=c0;c<=c1;c++)set(G,c,r,ch);}
+function ground(G,c0,c1){row(G,c0,c1,10,'#');row(G,c0,c1,11,'#');}
+function pipe(G,c,topR){
+  set(G,c,topR,'p');set(G,c+1,topR,'i');
+  for(var r=topR+1;r<10;r++){set(G,c,r,'I');set(G,c+1,r,'I');}
+}
+function vault(G,w){ // sealed bonus room shell
+  row(G,0,w-1,2,'B');ground(G,0,w-1);
+  for(var r=3;r<10;r++){set(G,0,r,'B');set(G,w-1,r,'B');}
+}
+
+var LEVELS=[
+{ name:'第 1 关 · 深圳 科技园的清晨', short:'深圳', w:126, city:0,
+  sky:'#9ad4ec', grass:'#7cc35a', grassD:'#5da34a', dirt:'#b9855c', dirtD:'#9c6c48',
+  pipes:{main:[{c:32,to:'sub',spawn:[3,8]}],sub:[{c:16,to:'main',spawn:[34,8]}]},
+  sub:{w:20,build:function(G){
+    vault(G,20);
+    row(G,5,14,7,'o');row(G,5,14,8,'o');
+    set(G,9,5,'M');
+    pipe(G,16,8);
+  }},
+  build:function(G){
+    ground(G,0,35);ground(G,38,70);ground(G,74,100);ground(G,104,125);
+    set(G,2,9,'S');
+    row(G,10,12,8,'o');
+    set(G,16,7,'?');set(G,18,7,'M');
+    pipe(G,32,8);
+    row(G,42,45,7,'-');row(G,43,44,5,'o');
+    set(G,47,9,'d');
+    set(G,50,7,'B');set(G,51,7,'?');set(G,52,7,'B');
+    set(G,56,9,'g');set(G,60,9,'d');
+    set(G,64,9,'#');set(G,65,9,'#');set(G,65,8,'#');set(G,66,9,'#');set(G,66,8,'#');set(G,66,7,'#');
+    set(G,78,4,'b');
+    set(G,82,7,'G');
+    row(G,86,90,7,'o');
+    row(G,94,95,9,'^');
+    set(G,97,9,'d');
+    row(G,108,110,8,'o');
+    row(G,114,118,9,'#');row(G,115,117,8,'#');
+    set(G,116,7,'F');
+  }},
+{ name:'第 2 关 · 胡志明市 落日大道', short:'胡志明市', w:128, city:1,
+  sky:'#f2a35c', grass:'#8fbf5a', grassD:'#6da344', dirt:'#c08a52', dirtD:'#a17040',
+  build:function(G){
+    ground(G,0,30);ground(G,34,52);ground(G,56,88);ground(G,92,127);
+    set(G,2,9,'S');
+    row(G,8,10,8,'o');
+    set(G,14,9,'d');set(G,18,9,'g');
+    set(G,22,7,'?');set(G,23,7,'P');set(G,24,7,'M');
+    row(G,38,40,6,'-');row(G,38,39,4,'o');
+    row(G,44,45,9,'^');
+    set(G,48,5,'b');
+    set(G,58,7,'B');set(G,59,7,'?');set(G,60,7,'B');
+    set(G,63,9,'g');set(G,66,9,'d');set(G,68,9,'d');
+    row(G,72,74,7,'-');row(G,77,79,5,'-');set(G,78,3,'o');
+    set(G,83,6,'G');
+    row(G,86,87,9,'^');
+    set(G,95,4,'b');set(G,99,9,'g');
+    row(G,103,107,7,'o');
+    set(G,110,7,'J');
+    set(G,113,9,'d');set(G,115,9,'d');set(G,117,9,'d');
+    row(G,120,124,9,'#');row(G,121,123,8,'#');
+    set(G,122,7,'F');
+  }},
+{ name:'第 3 关 · 武汉 樱花与大桥', short:'武汉', w:130, city:2, petal:1,
+  sky:'#bfe0f0', grass:'#86b869', grassD:'#699c4f', dirt:'#a67c50', dirtD:'#8a6440',
+  build:function(G){
+    ground(G,0,24);ground(G,28,58);ground(G,62,94);ground(G,98,129);
+    set(G,2,9,'S');
+    row(G,6,8,8,'o');
+    set(G,12,9,'g');set(G,15,7,'?');
+    set(G,19,9,'#');set(G,20,9,'#');set(G,20,8,'#');set(G,21,9,'#');set(G,21,8,'#');set(G,21,7,'#');
+    row(G,30,33,6,'B');row(G,31,32,3,'o');
+    set(G,36,9,'d');
+    row(G,40,42,9,'^');
+    set(G,45,7,'M');
+    set(G,48,4,'b');
+    row(G,64,70,5,'B');row(G,66,68,3,'o');
+    set(G,72,9,'g');set(G,75,9,'d');
+    set(G,78,7,'G');
+    row(G,82,84,9,'^');
+    set(G,87,5,'b');
+    row(G,90,91,8,'o');
+    set(G,100,9,'d');set(G,103,9,'g');
+    set(G,106,7,'?');set(G,107,7,'P');
+    row(G,111,113,9,'^');
+    row(G,116,119,7,'o');
+    row(G,122,126,9,'#');row(G,123,125,8,'#');
+    set(G,124,7,'F');
+  }},
+{ name:'第 4 关 · 上海 霓虹夜', short:'上海', w:132, city:3, night:1,
+  sky:'#171b38', grass:'#4a6b52', grassD:'#3a5642', dirt:'#5d4a44', dirtD:'#4a3a36',
+  pipes:{main:[{c:16,to:'sub',spawn:[3,8]}],sub:[{c:16,to:'main',spawn:[19,8]}]},
+  sub:{w:20,build:function(G){
+    vault(G,20);
+    row(G,4,15,7,'o');row(G,4,15,8,'o');
+    set(G,9,5,'J');
+    pipe(G,16,8);
+  }},
+  build:function(G){
+    ground(G,0,20);ground(G,24,50);ground(G,54,82);ground(G,86,108);ground(G,112,131);
+    set(G,2,9,'S');
+    row(G,8,9,8,'o');
+    set(G,12,9,'d');
+    pipe(G,16,8);
+    set(G,27,5,'b');
+    set(G,30,7,'B');set(G,31,7,'?');set(G,32,7,'P');set(G,33,7,'B');
+    set(G,37,9,'d');set(G,40,9,'g');
+    row(G,44,46,9,'^');
+    row(G,56,58,7,'-');row(G,61,63,5,'-');row(G,62,62,3,'o');
+    set(G,66,3,'b');
+    set(G,69,6,'M');
+    set(G,72,9,'d');set(G,74,9,'d');
+    row(G,78,80,9,'^');
+    set(G,88,9,'g');set(G,91,9,'g');
+    set(G,94,7,'G');
+    set(G,97,4,'b');
+    row(G,100,102,8,'o');
+    row(G,104,106,9,'^');
+    set(G,114,9,'d');set(G,116,9,'d');
+    row(G,119,121,8,'o');
+    row(G,124,128,9,'#');row(G,125,127,8,'#');
+    set(G,126,7,'F');
+  }},
+{ name:'第 5 关 · 广州 小蛮腰下', short:'广州', w:132, city:4, dusk:1,
+  sky:'#c97a5c', grass:'#6f9c4f', grassD:'#578240', dirt:'#8f6a48', dirtD:'#755538',
+  build:function(G){
+    ground(G,0,16);ground(G,20,40);ground(G,44,66);ground(G,70,96);ground(G,100,131);
+    set(G,2,9,'S');
+    set(G,7,9,'d');set(G,10,9,'g');
+    row(G,13,14,8,'o');
+    row(G,22,24,9,'^');
+    set(G,27,5,'b');
+    set(G,30,7,'?');set(G,31,7,'M');
+    set(G,34,9,'d');set(G,37,9,'g');
+    row(G,46,48,7,'-');row(G,51,53,5,'-');
+    set(G,56,3,'b');
+    row(G,58,60,9,'^');
+    set(G,63,7,'P');
+    set(G,72,9,'g');set(G,74,9,'d');set(G,76,9,'d');set(G,78,9,'g');
+    set(G,81,6,'G');
+    row(G,84,86,9,'^');
+    set(G,89,4,'b');
+    row(G,91,94,7,'o');
+    set(G,102,7,'J');
+    set(G,105,9,'d');set(G,107,9,'d');set(G,109,9,'d');set(G,111,9,'g');
+    row(G,114,116,9,'^');
+    row(G,119,121,8,'o');
+    row(G,124,128,9,'#');row(G,125,127,8,'#');
+    set(G,126,7,'F');
+  }},
+{ name:'最终关 · 月球 黑魔仙的阴谋', short:'月球', w:48, city:5, moon:1, boss:1,
+  sky:'#05060f', grass:'#9aa0ad', grassD:'#7d828f', dirt:'#6f7580', dirtD:'#5a5f6a',
+  build:function(G){
+    ground(G,0,47);
+    set(G,2,9,'S');
+    set(G,8,7,'P');
+    row(G,12,14,8,'o');
+    row(G,26,28,8,'o');
+    set(G,40,7,'G');
+  }}
+];
+
+/* ---------- state ---------- */
+var rooms,cur,roomKey,lvl,lvlIdx=0;
+var pl,cam,parts,pops,bolts,boss,bossActive;
+var lives=3,ck=0,deaths=0,totalCk=0;
+var paused=false,phase='title',freezeT=0,vicT=0;
+var unlock=0,bestClear=false;
+try{unlock=parseInt(localStorage.getItem('azhu-unlock')||'0',10)||0;}catch(e){}
+try{bestClear=localStorage.getItem('azhu-clear')==='1';}catch(e){}
+
+function parseRoom(w,build,pipeDefs){
+  var G=makeGrid(w);build(G);
+  var room={grid:G,LW:w,en:[],it:[],ck:[],pipes:[],bumps:{},spawn:[2,9],goal:null};
+  for(var r=0;r<ROWS;r++)for(var c=0;c<w;c++){
+    var ch=G[r][c];
+    if(ch==='S'){room.spawn=[c,r];G[r][c]='.';}
+    else if(ch==='F'){room.goal={x:c*TS-4,y:r*TS-4,w:24,h:20};G[r][c]='.';}
+    else if(ch==='o'){room.ck.push({x:c*TS+8,y:r*TS+8,got:0});G[r][c]='.';}
+    else if(ch==='d'){room.en.push({k:'duck',x:c*TS+1,y:r*TS,w:13,h:12,vx:-28,vy:0,sq:0,dead:0});G[r][c]='.';}
+    else if(ch==='g'){room.en.push({k:'snail',st:'walk',x:c*TS+1,y:r*TS,w:13,h:11,vx:-20,vy:0,t:0,grace:0,sq:0,dead:0});G[r][c]='.';}
+    else if(ch==='b'){room.en.push({k:'bird',x:c*TS,y:r*TS,w:12,h:9,vx:-34,vy:0,by:r*TS,ph:c*0.7,dead:0});G[r][c]='.';}
+    else if(ch==='p'&&pipeDefs){
+      for(var pd=0;pd<pipeDefs.length;pd++)
+        if(pipeDefs[pd].c===c)room.pipes.push({c:c,r:r,to:pipeDefs[pd].to,spawn:pipeDefs[pd].spawn});
+    }
+  }
+  return room;
+}
+
+function loadLevel(i){
+  lvlIdx=i;lvl=LEVELS[i];
+  var pdefs=lvl.pipes||{};
+  rooms={main:parseRoom(lvl.w,lvl.build,pdefs.main)};
+  if(lvl.sub)rooms.sub=parseRoom(lvl.sub.w,lvl.sub.build,pdefs.sub);
+  roomKey='main';cur=rooms.main;
+  parts=[];pops=[];bolts=[];boss=null;bossActive=false;
+  var sp=cur.spawn;
+  pl={x:sp[0]*TS+3,y:sp[1]*TS,w:10,h:12,vx:0,vy:0,dir:1,onG:false,big:false,
+      invulT:0,shield:false,speedT:0,invT:0,
+      coyote:0,jbuf:0,jheld:false,animT:0,idleT:0,bubT:0};
+  cam=clamp(pl.x-120,0,cur.LW*TS-VW);
+  document.getElementById('lvlName').textContent=lvl.name;
+  updateHUD();
+}
+
+/* ---------- tiles ---------- */
+function tile(c,r){
+  if(c<0||c>=cur.LW)return '#';
+  if(r<0||r>=ROWS)return '.';
+  return cur.grid[r][c];
+}
+function solidCh(ch){return ch==='#'||ch==='B'||ch==='?'||ch==='P'||ch==='M'||ch==='G'||ch==='J'||ch==='U'||ch==='p'||ch==='i'||ch==='I';}
+function itemBlock(ch){return ch==='P'||ch==='M'||ch==='G'||ch==='J';}
+function solidAt(px,py){return solidCh(tile(Math.floor(px/TS),Math.floor(py/TS)));}
+
+/* ---------- physics ---------- */
+function moveX(o,dx){
+  o.x+=dx;
+  if(dx>0){
+    if(solidAt(o.x+o.w,o.y+1)||solidAt(o.x+o.w,o.y+o.h-1)){
+      o.x=Math.floor((o.x+o.w)/TS)*TS-o.w-0.01;return true;
+    }
+  } else if(dx<0){
+    if(solidAt(o.x,o.y+1)||solidAt(o.x,o.y+o.h-1)){
+      o.x=Math.floor(o.x/TS)*TS+TS+0.01;return true;
+    }
+  }
+  return false;
+}
+function moveY(o,dy,oneway){
+  var oldB=o.y+o.h;
+  o.y+=dy;
+  if(dy>0){
+    var bx1=o.x+1,bx2=o.x+o.w-1,by=o.y+o.h;
+    var tr=Math.floor(by/TS);
+    var hit=solidAt(bx1,by)||solidAt(bx2,by);
+    if(!hit&&oneway){
+      var c1=tile(Math.floor(bx1/TS),tr),c2=tile(Math.floor(bx2/TS),tr);
+      if((c1==='-'||c2==='-')&&oldB<=tr*TS+0.5)hit=true;
+    }
+    if(hit){o.y=tr*TS-o.h-0.01;return 1;}
+  } else if(dy<0){
+    var tx1=o.x+1,tx2=o.x+o.w-1,ty=o.y;
+    if(solidAt(tx1,ty)||solidAt(tx2,ty)){
+      o.y=Math.floor(ty/TS)*TS+TS+0.01;
+      return -1;
+    }
+  }
+  return 0;
+}
+
+function bumpBlock(c,r){
+  var ch=tile(c,r);
+  if(ch==='?'){
+    cur.grid[r][c]='U';cur.bumps[c+','+r]=0.001;
+    addCookie(1);pops.push({x:c*TS+8,y:r*TS-2,t:0});sfx.coin();
+  } else if(itemBlock(ch)){
+    cur.grid[r][c]='U';cur.bumps[c+','+r]=0.001;
+    var type={P:'bun',M:'tea',G:'gum',J:'gold'}[ch];
+    cur.it.push({type:type,x:c*TS+2,y:r*TS-13,w:12,h:12,vx:35,vy:0});
+    sfx.power();
+  } else if(ch==='B'){
+    if(pl.big){
+      cur.grid[r][c]='.';sfx.brk();
+      for(var i=0;i<4;i++)parts.push({x:c*TS+4+(i%2)*8,y:r*TS+4+((i/2)|0)*8,
+        vx:(i%2?1:-1)*(30+Math.random()*30),vy:-90-Math.random()*60,t:0,c:'#c9764a'});
+    } else {cur.bumps[c+','+r]=0.001;sfx.bump();}
+  }
+}
+
+function addCookie(n){
+  ck+=n;totalCk+=n;
+  if(ck>=100){ck-=100;lives++;sfx.life();toast('+1 条命！');}
+  updateHUD();
+}
+
+/* ---------- room warp ---------- */
+function switchRoom(to,spawn){
+  roomKey=to;cur=rooms[to];
+  pl.x=spawn[0]*TS+3;pl.y=spawn[1]*TS;
+  pl.vx=0;pl.vy=0;
+  cam=clamp(pl.x-120,0,cur.LW*TS-VW);
+}
+function tryPipe(){
+  for(var i=0;i<cur.pipes.length;i++){
+    var p=cur.pipes[i];
+    var px=p.c*TS, feet=pl.y+pl.h, cx=pl.x+pl.w/2;
+    if(pl.onG&&cx>px+1&&cx<px+2*TS-1&&Math.abs(feet-p.r*TS)<3){
+      freezeT=0.55;sfx.pipe();
+      switchRoom(p.to,p.spawn);
+      toast(p.to==='sub'?'发现了秘密房间！':'回到了地面');
+      return true;
+    }
+  }
+  return false;
+}
+
+/* ---------- boss 王文丹 ---------- */
+function spawnBoss(){
+  boss={x:34*TS,y:40,w:20,h:24,hp:3,st:'hover',t:0,vx:0,vy:0,castT:2,flashT:0,dir:-1};
+  bossActive=true;
+  toast('黑魔仙 王文丹 出现了！！');
+  sfx.cast();
+}
+function updateBoss(dt){
+  if(!boss)return;
+  boss.t+=dt;boss.flashT-=dt;
+  if(boss.st==='hover'){
+    var ty=36+Math.sin(boss.t*2)*10;
+    boss.y+=(ty-boss.y)*dt*3;
+    var dx=(pl.x-boss.x);
+    boss.x+=clamp(dx,-38,38)*dt;
+    boss.dir=dx<0?-1:1;
+    boss.castT-=dt;
+    if(boss.castT<=0){
+      boss.castT=2.2;
+      var bx=boss.x+boss.w/2,by=boss.y+boss.h/2;
+      var ang=Math.atan2(pl.y+6-by,pl.x+5-bx);
+      bolts.push({x:bx,y:by,vx:Math.cos(ang)*92,vy:Math.sin(ang)*92-18,t:0});
+      sfx.cast();
+    }
+    if(boss.t>5.5){boss.st='dive';boss.t=0;boss.tx=pl.x;}
+  } else if(boss.st==='dive'){
+    boss.x+=clamp(boss.tx-boss.x,-70,70)*dt*2;
+    boss.y+=200*dt;
+    if(boss.y+boss.h>=10*TS){boss.y=10*TS-boss.h;boss.st='stun';boss.t=0;}
+  } else if(boss.st==='stun'){
+    if(boss.t>1.7){boss.st='rise';boss.t=0;}
+  } else if(boss.st==='rise'){
+    boss.y-=90*dt;
+    if(boss.y<=44){boss.st='hover';boss.t=0;boss.castT=1.5;}
+  } else if(boss.st==='dead'){
+    boss.y+=60*dt;boss.x+=boss.dir*20*dt;
+    if(boss.t>2.2){
+      boss=null;
+      rooms.main.goal={x:24*TS-4,y:10*TS-20,w:24,h:20};
+      toast('被窝出现了！');
+      for(var i=0;i<10;i++)rooms.main.ck.push({x:20*TS+i*10,y:7*TS+(i%3)*10,got:0});
+    }
+    return;
+  }
+  // player interaction
+  if(rectHit(pl,boss)){
+    if(boss.st==='stun'&&pl.vy>40&&pl.y+pl.h-boss.y<boss.h*0.6){
+      boss.hp--;boss.flashT=0.8;pl.vy=-170;sfx.bossHurt();
+      addCookie(5);
+      if(boss.hp<=0){
+        boss.st='dead';boss.t=0;sfx.bossDie();
+        toast('王文丹：「可恶……本魔仙记住你了！」');
+        for(var j=0;j<8;j++)parts.push({x:boss.x+10,y:boss.y+10,
+          vx:(Math.random()-0.5)*120,vy:-60-Math.random()*80,t:0,c:'#a05bd0'});
+      } else {
+        boss.st='rise';boss.t=0;
+        toast('王文丹掉了一撮头发！还剩 '+boss.hp+' 滴血');
+      }
+    } else if(boss.st!=='dead'&&pl.invT<=0&&boss.flashT<=0){
+      hurt();
+    }
+  }
+}
+function updateBolts(dt){
+  for(var i=bolts.length-1;i>=0;i--){
+    var b=bolts[i];
+    b.t+=dt;b.vy+=60*dt;
+    b.x+=b.vx*dt;b.y+=b.vy*dt;
+    if(b.t>5||solidAt(b.x,b.y)){
+      for(var j2=0;j2<3;j2++)parts.push({x:b.x,y:b.y,vx:(Math.random()-.5)*60,vy:-40*Math.random(),t:0.6,c:'#a05bd0'});
+      bolts.splice(i,1);continue;
+    }
+    if(pl.invT<=0&&pl.invulT<=0&&b.x>pl.x-2&&b.x<pl.x+pl.w+2&&b.y>pl.y-2&&b.y<pl.y+pl.h+2){
+      bolts.splice(i,1);hurt();
+    }
+  }
+}
+
+/* ---------- player ---------- */
+var keys={};
+function update(dt){
+  if(paused||phase==='title'||phase==='clear'||phase==='over'||phase==='end')return;
+  if(freezeT>0){freezeT-=dt;return;}
+
+  if(phase==='victory'){
+    vicT+=dt;
+    if(vicT>1.3)finishLevel();
+    return;
+  }
+
+  if(phase==='dead'){
+    pl.vy=clamp(pl.vy+GRAV*dt,-999,MAXFALL);
+    pl.y+=pl.vy*dt;pl.animT+=dt;
+    if(pl.y>VH+80){
+      lives--;updateHUD();
+      if(lives<=0){
+        phase='over';sfx.over();show('overOv');
+        document.getElementById('overSub').textContent=
+          '阿猪倒在了'+lvl.short+'……但被窝还在月球上等它。';
+      } else {loadLevel(lvlIdx);phase='play';}
+    }
+    return;
+  }
+
+  var L=keys.a||keys.ArrowLeft, Rt=keys.d||keys.ArrowRight;
+  var J=keys[' ']||keys.w||keys.ArrowUp;
+  var D=keys.s||keys.ArrowDown;
+
+  // buffs tick
+  pl.speedT-=dt;pl.invT-=dt;pl.invulT-=dt;
+
+  var mv=MOVE*(pl.speedT>0?1.4:1);
+  var jv=JUMPV+(pl.speedT>0?14:0);
+
+  var tv=(Rt?1:0)-(L?1:0);
+  if(tv!==0){
+    pl.dir=tv;
+    pl.vx=clamp(pl.vx+tv*ACC*dt,-mv,mv);
+    pl.idleT=0;
+  } else {
+    if(pl.vx>0)pl.vx=Math.max(0,pl.vx-FRIC*dt);
+    else pl.vx=Math.min(0,pl.vx+FRIC*dt);
+  }
+  moveX(pl,pl.vx*dt);
+  if(pl.x<0){pl.x=0;pl.vx=0;}
+  if(pl.x>cur.LW*TS-pl.w){pl.x=cur.LW*TS-pl.w;pl.vx=0;}
+
+  pl.jbuf-=dt;pl.coyote-=dt;
+  if(J&&!pl.jheld){pl.jbuf=0.12;pl.idleT=0;}
+  pl.jheld=J;
+  if(pl.jbuf>0&&pl.coyote>0){
+    pl.vy=-jv;pl.jbuf=0;pl.coyote=0;pl.onG=false;sfx.jump();
+  }
+  var gmul=(pl.vy<0&&J)?0.52:1;
+  pl.vy=clamp(pl.vy+GR()*gmul*dt,-999,MAXFALL);
+  var res=moveY(pl,pl.vy*dt,true);
+  if(res===1){pl.onG=true;pl.vy=0;}
+  else {
+    if(res===-1){
+      var hc=Math.floor((pl.x+pl.w/2)/TS), hr=Math.floor((pl.y-2)/TS);
+      if(!solidCh(tile(hc,hr)))hc=Math.floor((pl.x+1)/TS);
+      if(!solidCh(tile(hc,hr)))hc=Math.floor((pl.x+pl.w-1)/TS);
+      if(solidCh(tile(hc,hr)))bumpBlock(hc,hr);
+      pl.vy=0;
+    }
+    pl.onG=false;
+  }
+  if(pl.onG)pl.coyote=0.09;
+  pl.animT+=Math.abs(pl.vx)>4?dt:0;
+
+  // idle bubble (贴纸：吹泡泡)
+  if(pl.onG&&Math.abs(pl.vx)<2&&phase==='play'){
+    pl.idleT+=dt;
+    if(pl.idleT>4){pl.bubT+=dt;if(pl.bubT>2.6){pl.bubT=0;sfx.pop();}}
+    else pl.bubT=0;
+  } else {pl.idleT=0;pl.bubT=0;}
+
+  // pipes
+  if(D&&pl.onG)tryPipe();
+
+  // spikes
+  var scx=Math.floor((pl.x+pl.w/2)/TS), scy=Math.floor((pl.y+pl.h-2)/TS);
+  if(tile(scx,scy)==='^'&&pl.invT<=0)hurt();
+  if(pl.y>VH+10)die();
+
+  // cookies
+  cur.ck.forEach(function(o){
+    if(o.got)return;
+    if(Math.abs(pl.x+pl.w/2-o.x)<10&&Math.abs(pl.y+pl.h/2-o.y)<12){
+      o.got=1;addCookie(1);sfx.coin();
+    }
+  });
+
+  // items
+  for(var i=cur.it.length-1;i>=0;i--){
+    var it=cur.it[i];
+    it.vy=clamp(it.vy+GR()*dt,-999,MAXFALL);
+    if(moveX(it,it.vx*dt))it.vx=-it.vx;
+    if(moveY(it,it.vy*dt,true)===1)it.vy=0;
+    if(it.y>VH+40){cur.it.splice(i,1);continue;}
+    if(rectHit(pl,it)){
+      cur.it.splice(i,1);
+      if(it.type==='bun'){
+        sfx.power();
+        if(!pl.big){pl.big=true;pl.h=16;pl.y-=4;toast('阿猪：「我187，有腹肌！」');}
+        else {addCookie(10);toast('已经很大了，+10 曲奇');}
+      } else if(it.type==='tea'){
+        sfx.power();pl.speedT=8;toast('奶茶到手！快得起飞');
+      } else if(it.type==='gum'){
+        sfx.power();pl.shield=true;toast('吹了个泡泡当护盾');
+      } else if(it.type==='gold'){
+        sfx.star();pl.invT=6;toast('金菠萝！！无敌了！！');
+      }
+      updateHUD();
+    }
+  }
+
+  // enemies
+  for(var j=cur.en.length-1;j>=0;j--){
+    var m=cur.en[j];
+    if(m.dead){m.sq+=dt;if(m.sq>0.5)cur.en.splice(j,1);continue;}
+    if(m.x<cam-48||m.x>cam+VW+48)continue;
+    m.grace=(m.grace||0)-dt;
+    if(m.k==='duck'||m.k==='snail'){
+      var sliding=(m.k==='snail'&&m.st==='slide');
+      var walking=(m.k==='duck')||(m.k==='snail'&&m.st==='walk');
+      m.vy=clamp(m.vy+GR()*dt,-999,MAXFALL);
+      if(walking||sliding){
+        if(moveX(m,m.vx*dt)){m.vx=-m.vx;if(sliding)sfx.bump();}
+      }
+      if(moveY(m,m.vy*dt,true)===1)m.vy=0;
+      if(walking&&m.vy===0){
+        var ahead=m.vx>0?m.x+m.w+1:m.x-1;
+        if(!solidAt(ahead,m.y+m.h+2)&&tile(Math.floor(ahead/TS),Math.floor((m.y+m.h+2)/TS))!=='-')m.vx=-m.vx;
+      }
+      if(m.k==='snail'&&m.st==='shell'){
+        m.t+=dt;
+        if(m.t>6&&Math.abs(pl.x-m.x)>24){m.st='walk';m.vx=pl.x<m.x?20:-20;}
+      }
+      // sliding shell kills others
+      if(sliding){
+        for(var q=cur.en.length-1;q>=0;q--){
+          var o2=cur.en[q];
+          if(o2===m||o2.dead)continue;
+          if(rectHit(m,o2)){o2.dead=1;o2.sq=0;addCookie(2);sfx.stomp();}
+        }
+      }
+      if(m.y>VH+40){cur.en.splice(j,1);continue;}
+    } else { // bird
+      m.x+=m.vx*dt;m.ph+=dt*3;
+      m.y=m.by+Math.sin(m.ph)*13;
+      if(m.x<4||m.x>cur.LW*TS-16)m.vx=-m.vx;
+      if(Math.abs(m.x-pl.x)>190&&((m.vx>0&&m.x>pl.x)||(m.vx<0&&m.x<pl.x)))m.vx=-m.vx;
+    }
+    // player contact
+    if(rectHit(pl,m)){
+      if(pl.invT>0){ // star: plow through
+        m.dead=1;m.sq=0;addCookie(2);sfx.stomp();continue;
+      }
+      var stomping=pl.vy>40&&pl.y+pl.h-m.y<m.h*0.75;
+      if(m.k==='snail'){
+        if(m.st==='walk'){
+          if(stomping){m.st='shell';m.vx=0;m.t=0;pl.vy=-150;sfx.stomp();addCookie(2);}
+          else if(pl.invulT<=0)hurt();
+        } else if(m.st==='shell'){
+          // kick
+          m.st='slide';m.vx=(pl.x+pl.w/2<m.x+m.w/2)?170:-170;m.grace=0.3;
+          if(stomping)pl.vy=-150;
+          sfx.kick();
+        } else { // slide
+          if(stomping){m.st='shell';m.vx=0;m.t=0;pl.vy=-150;sfx.stomp();}
+          else if(m.grace<=0&&pl.invulT<=0)hurt();
+        }
+      } else {
+        if(stomping){m.dead=1;m.sq=0;pl.vy=-150;sfx.stomp();addCookie(2);}
+        else if(pl.invulT<=0)hurt();
+      }
+    }
+  }
+
+  // boss
+  if(lvl.boss){
+    if(!bossActive&&pl.x>10*TS)spawnBoss();
+    updateBoss(dt);
+    updateBolts(dt);
+  }
+
+  // particles & pops & bumps
+  for(var p=parts.length-1;p>=0;p--){
+    var pa=parts[p];pa.t+=dt;pa.vy+=GRAV*dt;pa.x+=pa.vx*dt;pa.y+=pa.vy*dt;
+    if(pa.t>1)parts.splice(p,1);
+  }
+  for(var q2=pops.length-1;q2>=0;q2--){
+    pops[q2].t+=dt;pops[q2].y-=30*dt;
+    if(pops[q2].t>0.6)pops.splice(q2,1);
+  }
+  for(var k in cur.bumps){cur.bumps[k]+=dt;if(cur.bumps[k]>0.24)delete cur.bumps[k];}
+
+  // goal
+  if(roomKey==='main'&&cur.goal&&rectHit(pl,cur.goal)){
+    phase='victory';vicT=0;sfx.win();
+    return;
+  }
+
+  // camera
+  var target=pl.x-120+(pl.dir>0?18:-6);
+  cam+=(clamp(target,0,cur.LW*TS-VW)-cam)*Math.min(1,dt*6);
+
+  updateBuffHUD();
+}
+
+function finishLevel(){
+  var next=lvlIdx+1;
+  if(next>unlock){unlock=next;try{localStorage.setItem('azhu-unlock',''+unlock);}catch(e){}}
+  if(next>=LEVELS.length){
+    phase='end';
+    try{localStorage.setItem('azhu-clear','1');}catch(e){}
+    document.getElementById('endSub').innerHTML=
+      '在月球的尘埃里，阿猪终于找回了自己的被窝。<br>'+
+      '黑魔仙王文丹被踩扁了三次，宣布退出魔法界，改行卖菠萝包。<br><br>'+
+      '这一路阿猪吃了 <b>'+totalCk+'</b> 块曲奇，摔了 <b>'+deaths+'</b> 次跤，<br>'+
+      '横跨了五座城市和三十八万公里。<br>但现在，都无所谓了。晚安。';
+    show('endOv');
+  } else {
+    phase='clear';
+    document.getElementById('clearSub').textContent=
+      lvl.short+' 通过！下一站：'+LEVELS[next].short;
+    show('clearOv');
+  }
+}
+
+function rectHit(a,b){
+  return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+}
+function hurt(){
+  if(pl.invulT>0||pl.invT>0)return;
+  if(pl.shield){
+    pl.shield=false;pl.invulT=1.2;sfx.pop();toast('泡泡「啪」地挡了一下！');updateHUD();return;
+  }
+  if(pl.big){pl.big=false;pl.h=12;pl.y+=4;pl.invulT=2;sfx.hurt();toast('阿猪变小了！');}
+  else die();
+}
+function die(){
+  if(phase==='dead')return;
+  deaths++;
+  phase='dead';sfx.die();
+  pl.vy=-220;pl.animT=0;freezeT=0.3;
+}
+
+/* ---------- HUD ---------- */
+function updateHUD(){
+  document.getElementById('livesN').textContent='×'+lives;
+  document.getElementById('ckN').textContent='×'+ck;
+  updateBuffHUD();
+}
+var buffEl=document.getElementById('buffs');
+function updateBuffHUD(){
+  var s='';
+  if(pl){
+    if(pl.shield)s+='<span>泡泡</span>';
+    if(pl.speedT>0)s+='<span>奶茶 '+Math.ceil(pl.speedT)+'</span>';
+    if(pl.invT>0)s+='<span>无敌 '+Math.ceil(pl.invT)+'</span>';
+  }
+  if(buffEl.innerHTML!==s)buffEl.innerHTML=s;
+}
+function toast(msg){
+  var box=document.getElementById('toasts');
+  var d=document.createElement('div');d.className='toast';d.textContent=msg;
+  box.appendChild(d);
+  setTimeout(function(){d.style.opacity='0';d.style.transition='opacity .4s';},1800);
+  setTimeout(function(){d.remove();},2300);
+  while(box.children.length>3)box.firstChild.remove();
+}
+function show(id){
+  ['titleOv','clearOv','overOv','endOv','pauseOv'].forEach(function(o){
+    document.getElementById(o).classList.toggle('hidden',o!==id);
+  });
+}
+function hideAll(){
+  ['titleOv','clearOv','overOv','endOv','pauseOv'].forEach(function(o){
+    document.getElementById(o).classList.add('hidden');
+  });
+}
+
+/* ---------- rendering ---------- */
+var cv=document.getElementById('game'),g=cv.getContext('2d');
+
+function render(t){
+  if(!lvl)return;
+  if(roomKey==='sub')drawVaultBG(t);
+  else drawCityBG(t);
+
+  var c0=Math.floor(cam/TS),c1=Math.ceil((cam+VW)/TS);
+  for(var r=0;r<ROWS;r++)for(var c=c0;c<=c1&&c<cur.LW;c++){
+    var ch=cur.grid[r][c];
+    if(ch==='.'||ch==='i'||ch==='I')continue;
+    var sx=c*TS-cam, sy=r*TS;
+    var bk=cur.bumps[c+','+r];
+    if(bk)sy-=Math.sin(bk/0.24*Math.PI)*4;
+    drawTile(ch,sx,sy,c,r,t);
+  }
+  // pipe bodies drawn as columns from 'p'
+  for(var r2=0;r2<ROWS;r2++)for(var c2=c0;c2<=c1&&c2<cur.LW;c2++){
+    if(cur.grid[r2][c2]==='p')drawPipe(c2*TS-cam,r2*TS,r2);
+  }
+
+  if(roomKey==='main'&&cur.goal)drawBed(cur.goal.x-cam,cur.goal.y,t,lvl.night||lvl.moon);
+
+  cur.ck.forEach(function(o){
+    if(o.got)return;
+    var wob=Math.sin(t/300+o.x)*1.5;
+    drawCookie(o.x-cam-4,o.y-4+wob);
+  });
+  pops.forEach(function(p){
+    g.globalAlpha=clamp(1-p.t/0.6,0,1);
+    drawCookie(p.x-cam-4,p.y-4);
+    g.globalAlpha=1;
+  });
+  cur.it.forEach(function(it){drawItem(it);});
+  parts.forEach(function(p){R(g,p.x-cam,p.y,3,3,p.c||'#c9764a');});
+  cur.en.forEach(function(m){
+    if(m.x<cam-20||m.x>cam+VW+20)return;
+    if(m.k==='duck')drawDuck(m.x-cam,m.y,m.vx>0?1:-1,t,m.dead);
+    else if(m.k==='snail')drawSnail(m,t);
+    else drawBird(m.x-cam,m.y,m.vx>0?1:-1,t);
+  });
+  bolts.forEach(function(b){
+    disc(g,b.x-cam,b.y,3,'#a05bd0');disc(g,b.x-cam,b.y,1,'#e0c0f0');
+  });
+  if(boss)drawBoss(t);
+
+  // player
+  var blink=pl.invulT>0&&Math.floor(t/80)%2;
+  if(!blink){
+    if(phase==='victory')drawPigVictory(pl.x-cam,pl.y,t);
+    else drawPig(pl.x-cam,pl.y,pl.dir,pl.big,t,phase==='dead');
+  }
+  // star rainbow
+  if(pl.invT>0&&!blink){
+    g.globalAlpha=.3;
+    g.fillStyle='hsl('+((t*0.4)%360)+',85%,70%)';
+    g.fillRect(pl.x-cam-3,pl.y-4,pl.w+7,pl.h+6);
+    g.globalAlpha=1;
+  }
+  // shield bubble
+  if(pl.shield&&!blink){
+    g.globalAlpha=.35;
+    disc(g,pl.x-cam+5,pl.y+pl.h/2,12,'#cfe8f4');
+    g.globalAlpha=.7;
+    R(g,pl.x-cam+9,pl.y-4,2,2,'#ffffff');
+    g.globalAlpha=1;
+  }
+  // speed lines
+  if(pl.speedT>0&&Math.abs(pl.vx)>60){
+    g.globalAlpha=.5;
+    for(var sl=0;sl<3;sl++)R(g,pl.x-cam-pl.dir*(8+sl*5),pl.y+2+sl*4,4,1,'#ffffff');
+    g.globalAlpha=1;
+  }
+  // sweat (贴纸：流汗)
+  if(pl.invulT>0.4&&phase==='play'){
+    R(g,pl.x-cam+3,pl.y-7,2,3,'#7fb2d6');R(g,pl.x-cam+3,pl.y-8,1,1,'#7fb2d6');
+  }
+  // idle bubble (贴纸：吹泡泡)
+  if(pl.idleT>4&&phase==='play'){
+    var br=clamp(pl.bubT/1.6,0,1)*5+1;
+    if(pl.bubT<2.3){
+      var bx2=pl.x-cam+(pl.dir>0?15:-5)+ (pl.dir>0?br:-br)*0.4, by2=pl.y+4-br*0.5;
+      g.globalAlpha=.55;disc(g,bx2,by2,Math.round(br),'#cfe8f4');
+      g.globalAlpha=.9;R(g,bx2-1,by2-Math.round(br*0.5),1,1,'#ffffff');
+      g.globalAlpha=1;
+    }
+  }
+
+  // weather
+  if(lvl.petal&&roomKey==='main'){
+    g.fillStyle='rgba(244,194,206,0.9)';
+    for(var pn=0;pn<26;pn++){
+      var pxx=((pn*67)+t*0.03*(30+pn%20)+Math.sin(t/600+pn)*18)%(VW+20)-10;
+      var pyy=((pn*41)+t*0.05*(24+pn%16))%VH;
+      g.fillRect(pxx,pyy,2,2);
+    }
+  }
+  // boss HP
+  if(boss&&boss.st!=='dead'){
+    g.fillStyle='#e8e2d0';g.font='8px "Microsoft YaHei"';g.textAlign='center';
+    g.fillText('王文丹 · 黑魔仙',VW/2,12);
+    g.textAlign='left';
+    for(var hh=0;hh<3;hh++){
+      var col=hh<boss.hp?'#a05bd0':'#3a3050';
+      disc(g,VW/2-14+hh*14,20,4,col);
+      R(g,VW/2-16+hh*14,18,2,2,col);
+    }
+  }
+}
+
+/* ---------- backgrounds ---------- */
+function drawVaultBG(t){
+  R(g,0,0,VW,VH,'#141020');
+  for(var i=0;i<40;i++){
+    var x=(i*37)%VW,y=(i*53)%VH;
+    g.globalAlpha=0.05+0.05*Math.abs(Math.sin(t/700+i));
+    R(g,x,y,2,2,'#f2b8c6');
+  }
+  g.globalAlpha=1;
+}
+function sil(x,pts,col){ // silhouette polygon from base line 130
+  g.fillStyle=col;g.beginPath();
+  g.moveTo(x+pts[0][0],130);
+  for(var i=0;i<pts.length;i++)g.lineTo(x+pts[i][0],130-pts[i][1]);
+  g.lineTo(x+pts[pts.length-1][0],130);
+  g.closePath();g.fill();
+}
+function drawCityBG(t){
+  var ci=lvl.city;
+  if(ci===0){ // 深圳 day
+    R(g,0,0,VW,VH,'#9ad4ec');
+    R(g,0,0,VW,50,'#a8dcf0');
+    for(var cl=0;cl<5;cl++){
+      var cx=((cl*151)-(cam*0.2))%(VW+140)-70;if(cx<-70)cx+=VW+140;
+      var cy=14+((cl*29)%30);
+      R(g,cx,cy,30,8,'#ffffff');R(g,cx+5,cy-4,18,6,'#ffffff');
+    }
+    var off=-(cam*0.4)%(VW+260);
+    [off,off+VW+260].forEach(function(bx){
+      // 平安金融中心
+      R(g,bx+40,38,18,92,'#7ba8c9');R(g,bx+44,26,10,14,'#7ba8c9');R(g,bx+48,12,2,16,'#6a95b5');
+      // 春笋
+      sil(bx+90,[[0,0],[4,40],[9,58],[14,40],[18,0]],'#88b5d4');
+      // 平层楼群
+      R(g,bx+120,70,22,60,'#7ba8c9');R(g,bx+150,84,26,46,'#88b5d4');
+      R(g,bx+186,60,16,70,'#7ba8c9');R(g,bx+210,90,30,40,'#88b5d4');
+      // 窗
+      for(var w=0;w<10;w++)R(g,bx+42+(w%3)*5,50+((w/3)|0)*14,2,4,'#d8ecf6');
+    });
+    R(g,0,130,VW,50,'#84b95e');
+    // palms
+    var poff=-(cam*0.7)%(VW+200);
+    [poff,poff+VW+200].forEach(function(px){
+      R(g,px+60,112,3,18,'#8a6a4a');
+      R(g,px+52,108,10,3,'#4f8a3d');R(g,px+64,106,10,3,'#4f8a3d');R(g,px+58,104,4,4,'#5da34a');
+    });
+  } else if(ci===1){ // 胡志明市 sunset
+    R(g,0,0,VW,60,'#f8c97c');R(g,0,60,VW,40,'#f2a35c');R(g,0,100,VW,80,'#e08a5c');
+    disc(g,240-cam*0.05%40,44,14,'#fde8b0');
+    var off1=-(cam*0.4)%(VW+280);
+    [off1,off1+VW+280].forEach(function(bx){
+      // Landmark 81
+      sil(bx+60,[[0,0],[3,36],[6,66],[9,92],[12,66],[15,36],[18,0]],'#a3585a');
+      // Bitexco 圆盘
+      R(g,bx+120,66,14,64,'#b06a62');R(g,bx+115,84,7,4,'#b06a62');
+      R(g,bx+150,90,24,40,'#a3585a');R(g,bx+184,76,16,54,'#b06a62');
+      R(g,bx+210,96,30,34,'#a3585a');
+    });
+    R(g,0,130,VW,50,'#8a5c48');
+    var poff1=-(cam*0.7)%(VW+180);
+    [poff1,poff1+VW+180].forEach(function(px){
+      R(g,px+40,110,3,20,'#6e4a30');
+      R(g,px+32,106,10,3,'#5f8a3d');R(g,px+44,104,10,3,'#5f8a3d');
+    });
+  } else if(ci===2){ // 武汉
+    R(g,0,0,VW,VH,'#bfe0f0');
+    var off2=-(cam*0.3)%(VW+300);
+    [off2,off2+VW+300].forEach(function(bx){
+      // 黄鹤楼
+      var hx=bx+70;
+      R(g,hx+6,96,26,34,'#8a6248');
+      R(g,hx,92,38,6,'#6e4a35');R(g,hx+4,80,30,12,'#8a6248');
+      R(g,hx-2,76,42,6,'#6e4a35');R(g,hx+8,64,22,12,'#8a6248');
+      R(g,hx+4,60,30,6,'#6e4a35');R(g,hx+15,52,8,8,'#6e4a35');
+      // 楼群
+      R(g,bx+160,86,20,44,'#9db4c4');R(g,bx+190,74,16,56,'#8aa6ba');
+      R(g,bx+216,92,26,38,'#9db4c4');
+    });
+    // 长江大桥 truss
+    var boff=-(cam*0.55)%(VW+120);
+    [boff,boff+VW+120].forEach(function(bx){
+      R(g,bx,118,VW+120,3,'#5d6472');
+      for(var tr=0;tr<14;tr++){
+        R(g,bx+tr*24,104,2,14,'#5d6472');
+        R(g,bx+tr*24,104,24,2,'#5d6472');
+      }
+    });
+    R(g,0,130,VW,50,'#8fbf72');
+  } else if(ci===3){ // 上海 night
+    R(g,0,0,VW,VH,'#171b38');
+    for(var s=0;s<20;s++){
+      g.globalAlpha=.4+.6*Math.abs(Math.sin(t/700+s));
+      R(g,(s*53)%VW,(s*29)%56,1,1,'#cdd6ff');
+    }
+    g.globalAlpha=1;
+    var off3=-(cam*0.4)%(VW+300);
+    [off3,off3+VW+300].forEach(function(bx){
+      // 东方明珠
+      R(g,bx+70,60,3,70,'#3a4468');
+      disc(g,bx+71,66,7,'#8a4a68');disc(g,bx+71,96,9,'#8a4a68');
+      R(g,bx+70,40,3,20,'#3a4468');
+      // 上海中心（螺旋顶）
+      sil(bx+120,[[0,0],[4,60],[6,86],[13,92],[16,60],[20,0]],'#2c3358');
+      // 金茂
+      sil(bx+160,[[0,0],[4,44],[8,72],[12,44],[16,0]],'#343d64');
+      R(g,bx+200,80,24,50,'#2c3358');R(g,bx+234,66,18,64,'#343d64');
+      // 霓虹窗
+      for(var w3=0;w3<16;w3++){
+        if(hash2(w3,3)<0.6)R(g,bx+202+(w3%4)*5,86+((w3/4)|0)*10,2,3,hash2(w3,7)<0.5?'#f2d18b':'#7fd6d0');
+      }
+    });
+    R(g,0,130,VW,50,'#10142c');
+    // 黄浦江 reflections
+    for(var rf=0;rf<10;rf++){
+      g.globalAlpha=.25;
+      R(g,(rf*37+t*0.01)%VW,136+(rf%4)*8,8,1,'#f2d18b');
+      g.globalAlpha=1;
+    }
+  } else if(ci===4){ // 广州 dusk
+    R(g,0,0,VW,50,'#e8a06a');R(g,0,50,VW,50,'#c97a5c');R(g,0,100,VW,80,'#8a5a6b');
+    var off4=-(cam*0.4)%(VW+300);
+    [off4,off4+VW+300].forEach(function(bx){
+      // 小蛮腰
+      var gx=bx+90;
+      sil(gx,[[0,0],[5,30],[8,55],[9,80],[10,55],[13,30],[18,0]],'#4a3a52');
+      R(g,gx+7,130-96,4,16,'#4a3a52');
+      for(var lt=0;lt<8;lt++){
+        g.globalAlpha=.7+.3*Math.sin(t/300+lt);
+        R(g,gx+5+((lt%2)*6),130-24-lt*9,2,2,['#e05545','#f2c14b','#7fd6d0','#a05bd0'][lt%4]);
+      }
+      g.globalAlpha=1;
+      R(g,bx+160,84,22,46,'#5a4562');R(g,bx+190,70,16,60,'#4a3a52');
+      R(g,bx+216,92,28,38,'#5a4562');
+    });
+    R(g,0,130,VW,50,'#5d7a48');
+  } else { // 月球
+    R(g,0,0,VW,VH,'#05060f');
+    for(var s2=0;s2<40;s2++){
+      g.globalAlpha=.3+.7*Math.abs(Math.sin(t/600+s2));
+      R(g,(s2*41)%VW,(s2*23)%110,1,1,'#cdd6ff');
+    }
+    g.globalAlpha=1;
+    // 地球
+    disc(g,260,34,16,'#3a6ea8');
+    R(g,250,26,8,5,'#5f9c5a');R(g,262,34,10,6,'#5f9c5a');R(g,256,42,6,4,'#5f9c5a');
+    g.globalAlpha=.2;disc(g,260,34,19,'#7fb2d6');g.globalAlpha=1;
+    R(g,0,130,VW,50,'#3e424e');
+  }
+}
+
+/* ---------- tiles ---------- */
+function drawTile(ch,x,y,c,r,t){
+  switch(ch){
+    case '#':
+      if(lvl.moon){
+        R(g,x,y,TS,TS,tile(c,r-1)==='.'?'#9aa0ad':'#6f7580');
+        if(!solidCh(tile(c,r-1))){
+          R(g,x,y,TS,3,'#b8bdc9');
+          if(hash2(c,r)<0.35)disc(g,x+8,y+9,3,'#7d828f');
+        } else if(hash2(c*7,r)<0.3)R(g,x+4,y+6,3,3,'#5a5f6a');
+        break;
+      }
+      if(!solidCh(tile(c,r-1))){
+        R(g,x,y,TS,5,lvl.grass);R(g,x,y+4,TS,1,lvl.grassD);
+        if(hash2(c,r)<0.5)R(g,x+3+hash2(c,r*3)*8,y+1,1,2,lvl.grassD);
+        R(g,x,y+5,TS,11,lvl.dirt);
+      } else R(g,x,y,TS,TS,lvl.dirt);
+      if(hash2(c*7,r)<0.4)R(g,x+2+hash2(c,r*9)*10,y+7+hash2(c*5,r)*6,2,2,lvl.dirtD);
+      break;
+    case 'B':
+      R(g,x,y,TS,TS,'#c9764a');R(g,x,y,TS,1,'#e0925e');
+      R(g,x,y+7,TS,2,'#8a4630');R(g,x+7,y,2,7,'#8a4630');
+      R(g,x+3,y+9,2,7,'#8a4630');R(g,x+11,y+9,2,7,'#8a4630');
+      break;
+    case '?':
+      qblock(x,y,'#f2c14b','#a8752c','#f8dc8a','#d9a637',t);
+      g.fillStyle='#7a4a1f';g.font='bold 10px monospace';g.textAlign='center';
+      g.fillText('?',x+8,y+12);g.textAlign='left';
+      break;
+    case 'P':
+      qblock(x,y,'#f2b8c6','#b06a78','#f8d3dc','#e0a0b2',t);
+      R(g,x+4,y+6,8,6,'#d9a05b');R(g,x+5,y+5,6,2,'#e3b171');
+      R(g,x+6,y+7,1,4,'#b3813f');R(g,x+9,y+7,1,4,'#b3813f');
+      break;
+    case 'M':
+      qblock(x,y,'#c9a986','#8a6a4a','#e0cbaa','#b3906a',t);
+      R(g,x+5,y+5,6,8,'#e8d5b8');R(g,x+6,y+8,4,4,'#8a5a3c');
+      R(g,x+7,y+3,1,3,'#5d4a3a');
+      break;
+    case 'G':
+      qblock(x,y,'#a8d8e8','#5d8a9c','#cfeaf4','#88b8cc',t);
+      disc(g,x+8,y+8,4,'#f2b8c6');R(g,x+6,y+5,2,2,'#ffffff');
+      break;
+    case 'J':
+      qblock(x,y,'#f2d18b','#b3873f','#fae8bc','#d9ad5c',t);
+      R(g,x+4,y+6,8,6,'#e8b83a');R(g,x+5,y+5,6,2,'#f2d16b');
+      R(g,x+6,y+7,1,4,'#b3813f');R(g,x+9,y+7,1,4,'#b3813f');
+      if(Math.floor(t/200)%2)R(g,x+12,y+3,2,2,'#ffffff');
+      break;
+    case 'U':
+      R(g,x,y,TS,TS,'#9a8f7a');R(g,x,y,TS,2,'#b0a68f');
+      R(g,x,y+14,TS,2,'#6e6552');
+      R(g,x+3,y+3,2,2,'#6e6552');R(g,x+11,y+3,2,2,'#6e6552');
+      R(g,x+3,y+11,2,2,'#6e6552');R(g,x+11,y+11,2,2,'#6e6552');
+      break;
+    case '-':
+      R(g,x,y+2,TS,6,'#ffffff');
+      R(g,x+1,y,6,4,'#ffffff');R(g,x+9,y+1,6,3,'#ffffff');
+      R(g,x,y+8,TS,3,'#dfe8f0');
+      break;
+    case '^':
+      g.fillStyle='#8a8f9c';
+      g.beginPath();g.moveTo(x,y+16);g.lineTo(x+4,y+4);g.lineTo(x+8,y+16);g.closePath();g.fill();
+      g.beginPath();g.moveTo(x+8,y+16);g.lineTo(x+12,y+4);g.lineTo(x+16,y+16);g.closePath();g.fill();
+      R(g,x+3,y+6,1,3,'#b8bdc9');R(g,x+11,y+6,1,3,'#b8bdc9');
+      break;
+  }
+}
+function qblock(x,y,bg,dark,hi,mid,t){
+  R(g,x,y,TS,TS,bg);R(g,x,y,TS,2,hi);
+  R(g,x,y+14,TS,2,dark);R(g,x,y,2,TS,mid);R(g,x+14,y,2,TS,dark);
+  if(Math.floor(t/400)%3===0)R(g,x+3,y+3,2,2,'#ffffff');
+}
+function drawPipe(x,topY,topR){
+  // find body height till ground
+  var h=(10-topR)*TS-TS;
+  // lip
+  R(g,x-2,topY,36,8,'#4a9c5a');R(g,x-2,topY,36,2,'#63b873');
+  R(g,x-2,topY+6,36,2,'#357a44');
+  // body
+  R(g,x,topY+8,32,h+8,'#4a9c5a');
+  R(g,x+3,topY+8,4,h+8,'#63b873');
+  R(g,x+26,topY+8,4,h+8,'#357a44');
+}
+
+/* ---------- sprites ---------- */
+var OUT='#9c5f6d', BODY='#f9d9e0', SNOUT='#f0aebe', NOS='#a86070', EYE='#3a2a30', BLUSH='#f4c2ce';
+function drawPig(x,y,dir,big,t,dead){
+  g.save();
+  var h=big?16:12;
+  g.translate(x+5,y+h/2);
+  if(dir<0)g.scale(-1,1);
+  if(dead)g.scale(1,-1);
+  g.translate(-7,-h/2);
+  var walk=Math.floor(pl.animT*10)%2;
+  var air=!pl.onG&&!dead;
+  if(big){
+    R(g,0,2,13,13,OUT);R(g,1,3,11,11,BODY);
+    R(g,2,0,3,3,OUT);R(g,3,1,2,2,BODY);
+    R(g,8,0,3,3,OUT);R(g,8,1,2,2,BODY);
+    R(g,9,6,5,5,OUT);R(g,10,7,4,3,SNOUT);
+    R(g,11,8,1,1,NOS);R(g,13,8,1,1,NOS);
+    R(g,7,6,2,2,EYE);
+    R(g,5,9,2,1,BLUSH);
+    // 腹肌 (贴纸：我187有腹肌)
+    R(g,4,11,1,3,'#eebccb');R(g,7,11,1,3,'#eebccb');R(g,3,12,6,1,'#eebccb');
+    R(g,-1,5,1,2,OUT);R(g,-2,4,1,2,OUT);
+    var l1=air?13:(walk?14:13),l2=air?13:(walk?13:14);
+    R(g,2,l1,3,3,OUT);R(g,3,l1+1,2,2,BODY);
+    R(g,8,l2,3,3,OUT);R(g,9,l2+1,2,2,BODY);
+  } else {
+    R(g,0,2,13,9,OUT);R(g,1,3,11,7,BODY);
+    R(g,2,0,3,3,OUT);R(g,3,1,2,2,BODY);
+    R(g,8,0,3,3,OUT);R(g,8,1,2,2,BODY);
+    R(g,9,4,5,5,OUT);R(g,10,5,4,3,SNOUT);
+    R(g,11,6,1,1,NOS);R(g,13,6,1,1,NOS);
+    if(dead){
+      R(g,6,5,1,1,EYE);R(g,8,5,1,1,EYE);R(g,7,6,1,1,EYE);
+      R(g,6,7,1,1,EYE);R(g,8,7,1,1,EYE);
+    } else R(g,7,5,2,2,EYE);
+    R(g,5,8,2,1,BLUSH);
+    R(g,-1,5,1,2,OUT);R(g,-2,4,1,2,OUT);
+    var s1=air?9:(walk?10:9),s2=air?9:(walk?9:10);
+    R(g,2,s1,3,3,OUT);R(g,3,s1+1,2,2,BODY);
+    R(g,8,s2,3,3,OUT);R(g,9,s2+1,2,2,BODY);
+  }
+  // tea cup (贴纸：拿着东西)
+  if(pl.speedT>0&&!dead){
+    R(g,12,h-4,4,5,'#e8d5b8');R(g,13,h-2,2,2,'#8a5a3c');R(g,14,h-7,1,3,'#5d4a3a');
+  }
+  g.restore();
+}
+function drawPigVictory(x,y,t){
+  // 贴纸:举手欢呼 front view
+  var h=pl.big?16:12;
+  var bob=Math.floor(t/160)%2;
+  y-=bob;
+  R(g,x-1,y+1,13,h-1,OUT);R(g,x,y+2,11,h-3,BODY);
+  R(g,x,y-2,3,3,OUT);R(g,x+1,y-1,2,2,BODY);
+  R(g,x+8,y-2,3,3,OUT);R(g,x+8,y-1,2,2,BODY);
+  R(g,x+2,y+4,2,2,EYE);R(g,x+7,y+4,2,2,EYE);
+  R(g,x+3,y+7,5,4,OUT);R(g,x+4,y+8,3,2,SNOUT);
+  R(g,x+4,y+9,1,1,NOS);R(g,x+6,y+9,1,1,NOS);
+  R(g,x,y+8,2,1,BLUSH);R(g,x+9,y+8,2,1,BLUSH);
+  // raised arm
+  R(g,x+11,y-3+bob,3,5,OUT);R(g,x+12,y-2+bob,2,3,BODY);
+  // sparkles
+  for(var i=0;i<3;i++){
+    var a=t/200+i*2.1;
+    g.globalAlpha=.6+.4*Math.sin(a*2);
+    var sx2=x+5+Math.cos(a)*13, sy2=y+3+Math.sin(a)*9;
+    R(g,sx2-1,sy2,3,1,'#f2d18b');R(g,sx2,sy2-1,1,3,'#f2d18b');
+    g.globalAlpha=1;
+  }
+}
+function drawDuck(x,y,dir,t,dead){
+  g.save();
+  g.translate(x+7,y+6);
+  if(dir>0)g.scale(-1,1);
+  g.translate(-7,-6);
+  if(dead){
+    R(g,0,8,14,4,'#9a8f7a');R(g,1,9,12,2,'#faf6ec');
+    R(g,2,8,2,1,'#3a2a30');
+    g.restore();return;
+  }
+  var walk=Math.floor(t/140)%2;
+  R(g,2,4,11,8,'#9a8f7a');R(g,3,5,9,6,'#faf6ec');
+  R(g,0,0,7,7,'#9a8f7a');R(g,1,1,5,5,'#faf6ec');
+  R(g,-3,3,4,2,'#e8963a');R(g,-2,5,2,1,'#c97a28');
+  R(g,2,2,1,2,'#3a2a30');
+  R(g,6,6,5,3,'#e8e2d0');
+  R(g,4+(walk?1:0),12,3,2,'#e8963a');R(g,9-(walk?1:0),12,3,2,'#e8963a');
+  g.restore();
+}
+function drawSnail(m,t){
+  var x=m.x-cam,y=m.y;
+  if(m.st==='walk'){
+    g.save();
+    g.translate(x+7,y+6);
+    if(m.vx>0)g.scale(-1,1);
+    g.translate(-7,-6);
+    // shell
+    disc(g,8,6,5,'#5d8a4a');disc(g,8,6,3,'#7cb35a');
+    R(g,7,4,2,2,'#4a7239');
+    // body
+    R(g,-1,7,8,4,'#d9c98a');R(g,-2,4,3,4,'#d9c98a');
+    R(g,-2,2,1,3,'#b3a468');R(g,0,2,1,3,'#b3a468');
+    R(g,-1,5,1,1,'#3a2a30');
+    g.restore();
+  } else {
+    // shell only
+    var wob=(m.st==='shell'&&m.t>4.5)?Math.round(Math.sin(t/50)*1):0;
+    disc(g,x+7+wob,y+7,6,'#5d8a4a');disc(g,x+7+wob,y+7,4,'#7cb35a');
+    R(g,x+4+wob,y+4,3,2,'#4a7239');R(g,x+8+wob,y+8,3,2,'#4a7239');
+    if(m.st==='slide'){
+      g.globalAlpha=.4;
+      R(g,x-(m.vx>0?8:-14),y+8,6,1,'#ffffff');
+      g.globalAlpha=1;
+    }
+  }
+}
+function drawBird(x,y,dir,t){
+  g.save();
+  g.translate(x+6,y+5);
+  if(dir>0)g.scale(-1,1);
+  g.translate(-6,-5);
+  var fl=Math.floor(t/120)%2;
+  R(g,2,3,9,5,'#5d6b8c');
+  R(g,0,4,3,2,'#e8c05a');
+  R(g,3,4,1,1,'#1a1410');
+  if(fl)R(g,5,0,5,3,'#48546e');
+  else R(g,5,7,5,3,'#48546e');
+  R(g,10,4,3,2,'#48546e');
+  g.restore();
+}
+function drawBoss(t){
+  var x=boss.x-cam,y=boss.y;
+  g.save();
+  g.translate(x+10,y+12);
+  if(boss.dir>0)g.scale(-1,1);
+  g.translate(-10,-12);
+  var flash=boss.flashT>0&&Math.floor(t/60)%2;
+  var robe=flash?'#6a5a80':'#1d1428';
+  var hairC=flash?'#4a4058':'#14101c';
+  // aura
+  if(boss.st!=='dead'){
+    g.globalAlpha=.25;
+    disc(g,10,12,14+Math.sin(t/200)*2,'#a05bd0');
+    g.globalAlpha=1;
+  }
+  // dress (flared)
+  g.fillStyle=robe;
+  g.beginPath();g.moveTo(10,6);g.lineTo(2,24);g.lineTo(18,24);g.closePath();g.fill();
+  R(g,4,22,12,2,'#7a3fa0');
+  // hair
+  R(g,3,0,14,7,hairC);R(g,2,4,3,12,hairC);R(g,15,4,3,12,hairC);
+  // face
+  R(g,6,2,8,6,'#efe0da');
+  R(g,7,4,2,2,'#c73e33');R(g,11,4,2,2,'#c73e33');
+  // tiara gem
+  R(g,9,0,2,2,'#a05bd0');
+  // arms
+  if(boss.st==='hover'&&boss.castT<0.5){
+    R(g,16,8,5,2,robe);
+    g.globalAlpha=.7;disc(g,22,9,3,'#a05bd0');g.globalAlpha=1;
+  } else {
+    R(g,15,10,4,2,robe);R(g,1,10,4,2,robe);
+  }
+  // stun dizzy
+  if(boss.st==='stun'){
+    for(var i=0;i<3;i++){
+      var a=t/250+i*2.1;
+      R(g,10+Math.cos(a)*9-1,-3+Math.sin(a)*2,3,1,'#f2d18b');
+    }
+  }
+  if(boss.st==='dead'){
+    R(g,7,4,2,2,'#3a2a30');R(g,11,4,2,2,'#3a2a30'); // x eyes-ish
+  }
+  g.restore();
+}
+function drawCookie(x,y){
+  R(g,x+1,y,6,8,'#c9974a');R(g,x,y+1,8,6,'#c9974a');
+  R(g,x+1,y+1,6,6,'#d9a95c');
+  R(g,x+2,y+2,1,1,'#7a5230');R(g,x+5,y+3,1,1,'#7a5230');R(g,x+3,y+5,1,1,'#7a5230');
+}
+function drawItem(it){
+  var x=it.x-cam,y=it.y;
+  if(it.type==='bun')drawBun(x,y);
+  else if(it.type==='gold'){
+    drawBun(x,y);
+    g.globalAlpha=.5;R(g,x-1,y-1,14,12,'rgba(242,209,139,0.4)');g.globalAlpha=1;
+    R(g,x+12,y-2,2,2,'#ffffff');
+  }
+  else if(it.type==='tea'){
+    R(g,x+2,y+2,8,9,'#e8d5b8');R(g,x+2,y+2,8,2,'#f2e5cf');
+    R(g,x+3,y+6,6,4,'#8a5a3c');
+    R(g,x+3,y+8,1,2,'#3a2a30');R(g,x+6,y+9,1,1,'#3a2a30');
+    R(g,x+6,y-2,1,5,'#d98aa0');
+  }
+  else if(it.type==='gum'){
+    disc(g,x+6,y+6,5,'#f2b8c6');
+    R(g,x+3,y+3,2,2,'#ffffff');
+    g.globalAlpha=.4;disc(g,x+6,y+6,6,'#f8d3dc');g.globalAlpha=1;
+  }
+}
+function drawBun(x,y){
+  R(g,x,y+3,12,8,'#b3813f');
+  R(g,x+1,y+1,10,8,'#d9a05b');R(g,x+2,y,8,3,'#e3b171');
+  R(g,x+3,y+2,1,6,'#b3813f');R(g,x+6,y+2,1,6,'#b3813f');R(g,x+9,y+2,1,6,'#b3813f');
+  R(g,x+1,y+6,10,1,'#b3813f');
+}
+function drawBed(x,y,t,night){
+  R(g,x+1,y+16,3,4,'#6e4a30');R(g,x+22,y+16,3,4,'#6e4a30');
+  R(g,x,y+8,26,9,'#8a5f43');R(g,x,y+8,26,2,'#a8764f');
+  R(g,x,y,4,12,'#8a5f43');R(g,x,y,4,2,'#a8764f');
+  R(g,x+4,y+4,7,5,'#f5f2ea');R(g,x+4,y+4,7,1,'#ffffff');
+  R(g,x+10,y+3,16,8,'#7f9ac9');R(g,x+10,y+3,16,2,'#93aed8');
+  R(g,x+13,y+5,1,5,'#6a83b3');R(g,x+18,y+5,1,5,'#6a83b3');
+  if(Math.floor(t/600)%2){
+    g.fillStyle='#e8e2d0';g.font='7px monospace';
+    g.fillText('z',x+20,y-3);
+  }
+}
+
+/* ---------- icons ---------- */
+(function(){
+  var pg=document.getElementById('icoPig').getContext('2d');
+  R(pg,2,4,12,9,OUT);R(pg,3,5,10,7,BODY);
+  R(pg,3,2,3,3,OUT);R(pg,4,3,2,2,BODY);
+  R(pg,10,2,3,3,OUT);R(pg,10,3,2,2,BODY);
+  R(pg,5,7,2,2,EYE);R(pg,10,7,2,2,EYE);
+  R(pg,6,9,4,3,SNOUT);R(pg,7,10,1,1,NOS);R(pg,9,10,1,1,NOS);
+  var ckg=document.getElementById('icoCk').getContext('2d');
+  R(ckg,3,2,10,12,'#c9974a');R(ckg,2,3,12,10,'#c9974a');R(ckg,3,3,10,10,'#d9a95c');
+  R(ckg,5,5,2,2,'#7a5230');R(ckg,10,6,2,2,'#7a5230');R(ckg,6,10,2,2,'#7a5230');
+  var tp=document.getElementById('titlePig').getContext('2d');
+  R(tp,6,12,28,24,OUT);R(tp,8,14,24,20,BODY);
+  R(tp,8,6,7,8,OUT);R(tp,10,8,4,5,BODY);
+  R(tp,25,6,7,8,OUT);R(tp,26,8,4,5,BODY);
+  R(tp,13,20,3,4,EYE);R(tp,24,20,3,4,EYE);
+  R(tp,15,25,10,7,OUT);R(tp,16,26,8,5,SNOUT);
+  R(tp,18,28,1,2,NOS);R(tp,21,28,1,2,NOS);
+  R(tp,9,27,3,2,BLUSH);R(tp,28,27,3,2,BLUSH);
+  R(tp,12,36,5,3,OUT);R(tp,13,37,3,2,BODY);
+  R(tp,23,36,5,3,OUT);R(tp,24,37,3,2,BODY);
+})();
+
+/* ---------- input ---------- */
+window.addEventListener('keydown',function(e){
+  var k=e.key.length===1?e.key.toLowerCase():e.key;
+  if(k===' '||k==='ArrowUp'||k==='ArrowDown'||k==='ArrowLeft'||k==='ArrowRight')e.preventDefault();
+  keys[k]=true;
+  if(k==='m')toggleMute();
+  if(k==='p'&&(phase==='play'||phase==='dead')){
+    paused=!paused;
+    document.getElementById('pauseOv').classList.toggle('hidden',!paused);
+  }
+});
+window.addEventListener('keyup',function(e){
+  var k=e.key.length===1?e.key.toLowerCase():e.key;
+  keys[k]=false;
+});
+window.addEventListener('blur',function(){
+  keys={};
+  if(phase==='play'&&!paused){paused=true;document.getElementById('pauseOv').classList.remove('hidden');}
+});
+
+/* ---------- touch controls ---------- */
+var isTouch=false;
+try{
+  isTouch=('ontouchstart' in window)||
+    (typeof navigator!=='undefined'&&navigator.maxTouchPoints>0);
+}catch(e){}
+if(isTouch){
+  document.getElementById('touch').classList.remove('hidden');
+  [['tL','ArrowLeft'],['tR','ArrowRight'],['tD','ArrowDown'],['tJ',' ']].forEach(function(pair){
+    var el=document.getElementById(pair[0]), k=pair[1];
+    function press(e){
+      if(e.cancelable)e.preventDefault();
+      keys[k]=true;el.classList.add('on');
+      try{ac().resume();}catch(err){}
+    }
+    function release(e){
+      if(e&&e.cancelable)e.preventDefault();
+      keys[k]=false;el.classList.remove('on');
+    }
+    el.addEventListener('touchstart',press,{passive:false});
+    el.addEventListener('touchend',release,{passive:false});
+    el.addEventListener('touchcancel',release,{passive:false});
+    el.addEventListener('mousedown',press);
+    el.addEventListener('mouseup',release);
+    el.addEventListener('mouseleave',function(){release();});
+  });
+}
+
+/* ---------- buttons ---------- */
+var sndBtn=document.getElementById('sndBtn');
+function renderSnd(){sndBtn.textContent=muted?'✕':'♪';}
+function toggleMute(){
+  muted=!muted;
+  try{localStorage.setItem('azhu-muted',muted?'1':'0');}catch(e){}
+  renderSnd();
+}
+sndBtn.addEventListener('click',toggleMute);renderSnd();
+document.getElementById('pauseBtn').addEventListener('click',function(){
+  if(phase!=='play'&&phase!=='dead')return;
+  paused=!paused;
+  document.getElementById('pauseOv').classList.toggle('hidden',!paused);
+});
+function startLevel(i,fresh){
+  if(fresh){lives=3;ck=0;deaths=0;totalCk=0;}
+  loadLevel(i);
+  phase='play';paused=false;hideAll();
+  try{ac().resume();}catch(e){}
+  toast(LEVELS[i].name);
+}
+function buildLvlBtns(){
+  var box=document.getElementById('lvlBtns');box.innerHTML='';
+  LEVELS.forEach(function(L,i){
+    var b=document.createElement('button');
+    b.textContent=(i<=unlock)?L.short:'🔒';
+    b.disabled=i>unlock;
+    if(i===0)b.classList.add('pinkbtn');
+    b.addEventListener('click',function(){startLevel(i,true);});
+    box.appendChild(b);
+  });
+  document.getElementById('bestLine').textContent=
+    bestClear?'你已经帮阿猪拿回过被窝了。再打一次黑魔仙也无妨。':(unlock>0?('已解锁到：'+LEVELS[Math.min(unlock,LEVELS.length-1)].short):'');
+}
+document.getElementById('btnNext').addEventListener('click',function(){startLevel(lvlIdx+1,false);});
+document.getElementById('btnAgain').addEventListener('click',function(){startLevel(0,true);});
+document.getElementById('btnMenu').addEventListener('click',function(){
+  bestClear=true;buildLvlBtns();show('titleOv');phase='title';
+});
+
+/* ---------- debug hook ---------- */
+try{window.__dbg={
+  x:function(){return pl?pl.x:0;},
+  y:function(){return pl?pl.y:0;},
+  onG:function(){return pl?pl.onG:false;},
+  phase:function(){return phase;},
+  lives:function(){return lives;},
+  room:function(){return roomKey;},
+  bossHp:function(){return boss?boss.hp:-1;},
+  bossActive:function(){return bossActive;}
+};}catch(e){}
+
+/* ---------- boot ---------- */
+buildLvlBtns();
+loadLevel(0);phase='title';show('titleOv');
+var lastT=0;
+function loop(t){
+  var dt=Math.min((t-lastT)/1000,0.04);lastT=t;
+  update(dt);
+  render(t);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+})();
+</script>

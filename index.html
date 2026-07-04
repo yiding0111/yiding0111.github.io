@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>阿猪游戏厅 · Pixel Arcade</title>
+<style>
+  :root{
+    --night:#14162a; --bone:#e8e2d0; --bone-dim:#b9b29c;
+    --pink:#f2b8c6; --gold:#f2d18b; --ink:#0d0b16;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--night);}
+  body{
+    color:var(--bone);font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+    background-image:radial-gradient(rgba(242,184,198,0.06) 1px,transparent 1px);
+    background-size:9px 9px;min-height:100vh;
+  }
+  #page{max-width:720px;margin:0 auto;padding:44px 16px 60px;}
+  header{text-align:center;margin-bottom:34px;}
+  .eyebrow{font-family:Consolas,monospace;font-size:11px;letter-spacing:5px;color:var(--gold);text-transform:uppercase;}
+  h1{font-family:"Noto Serif SC","SimSun",serif;font-size:38px;font-weight:900;
+    margin:8px 0 0;letter-spacing:10px;text-indent:10px;text-shadow:0 3px 0 rgba(0,0,0,.45);}
+  .tag{margin-top:12px;font-size:13px;color:var(--bone-dim);letter-spacing:1px;
+    font-family:"Noto Serif SC","SimSun",serif;}
+  .games{display:flex;flex-direction:column;gap:18px;}
+  a.card{
+    display:flex;gap:16px;align-items:center;text-decoration:none;color:var(--bone);
+    background:rgba(13,11,22,.7);border:3px solid var(--bone);
+    box-shadow:5px 6px 0 rgba(0,0,0,.5);padding:16px 18px;
+    transition:transform .08s;
+  }
+  a.card:hover{transform:translate(-2px,-2px);box-shadow:7px 8px 0 rgba(0,0,0,.5);border-color:var(--pink);}
+  a.card:active{transform:translate(2px,2px);box-shadow:2px 3px 0 rgba(0,0,0,.5);}
+  .emo{font-size:38px;flex:none;width:56px;text-align:center;filter:drop-shadow(2px 2px 0 rgba(0,0,0,.4));}
+  .info h2{margin:0 0 4px;font-size:18px;letter-spacing:3px;font-family:"Noto Serif SC","SimSun",serif;}
+  .info p{margin:0;font-size:12.5px;color:var(--bone-dim);line-height:1.7;}
+  .badge{display:inline-block;margin-top:6px;font-size:10.5px;letter-spacing:1px;
+    border:1px solid var(--gold);color:var(--gold);padding:1px 7px;margin-right:5px;}
+  .badge.pink{border-color:var(--pink);color:var(--pink);}
+  footer{margin-top:44px;text-align:center;font-family:Consolas,monospace;
+    font-size:10px;letter-spacing:2px;color:rgba(232,226,208,.4);line-height:2;}
+  @media (max-width:520px){
+    h1{font-size:28px;letter-spacing:6px;}
+    #page{padding-top:28px;}
+  }
+</style>
+</head>
+<body>
+<div id="page">
+  <header>
+    <div class="eyebrow">Pixel Arcade · hand-crafted with Claude</div>
+    <h1>阿猪游戏厅</h1>
+    <div class="tag">三个像素游戏 · 无需下载 · 点开即玩</div>
+  </header>
+
+  <div class="games">
+    <a class="card" href="azhu.html">
+      <div class="emo">🐷</div>
+      <div class="info">
+        <h2>阿猪大冒险</h2>
+        <p>马里奥式闯关。从深圳一路跳到月球，踩鸭子、钻水管、打黑魔仙，帮阿猪抢回被窝。</p>
+        <span class="badge pink">手机可玩</span><span class="badge">电脑可玩</span><span class="badge">六大关卡</span>
+      </div>
+    </a>
+    <a class="card" href="wild-night.html">
+      <div class="emo">🔥</div>
+      <div class="info">
+        <h2>荒夜求生</h2>
+        <p>饥荒式生存。采集合成、熬过黑夜、扛住寒冬和猎犬，看你能在荒岛上活几天。</p>
+        <span class="badge">需要键盘鼠标</span><span class="badge">自动存档</span>
+      </div>
+    </a>
+    <a class="card" href="central.html">
+      <div class="emo">📉</div>
+      <div class="info">
+        <h2>中环求生</h2>
+        <p>金融人版生存游戏。被困在空无一人的中环，靠咖啡、台灯和彭博终端熬过熊市与夺命连环call。</p>
+        <span class="badge">需要键盘鼠标</span><span class="badge">轻度玩梗</span>
+      </div>
+    </a>
+  </div>
+
+  <footer>
+    MADE FOR FUN · 像素画与音效均为程序生成 · 无广告 无追踪 无服务器<br>
+    进度保存在你自己的浏览器里
+  </footer>
+</div>
+</body>
+</html>

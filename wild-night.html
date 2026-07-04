@@ -1,0 +1,1719 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>荒夜求生 · 像素生存</title>
+<style>
+  :root{
+    --night:#14162a; --night2:#1b1e36; --bone:#e8e2d0; --bone-dim:#b9b29c;
+    --gold:#f2d18b; --seal:#c73e33; --ink:#0d0b16;
+    --hp:#d05050; --hun:#e0a33a; --san:#8a7fd6; --tmp:#7fb2d6;
+  }
+  html,body{margin:0;padding:0;background:var(--night);}
+  body{
+    color:var(--bone);font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+    background-image:radial-gradient(rgba(242,209,139,0.05) 1px,transparent 1px);
+    background-size:9px 9px;
+    -webkit-user-select:none;user-select:none;
+  }
+  #wrap{max-width:1000px;margin:0 auto;padding:18px 10px 40px;}
+  header{text-align:center;margin-bottom:10px;}
+  .eyebrow{font-family:Consolas,monospace;font-size:10px;letter-spacing:4px;color:var(--gold);text-transform:uppercase;}
+  h1{font-family:"Noto Serif SC","SimSun",serif;font-size:26px;font-weight:900;margin:2px 0 0;letter-spacing:8px;text-indent:8px;}
+
+  #stage{position:relative;margin:0 auto;max-width:960px;border:4px solid var(--bone);
+    box-shadow:0 0 0 1px var(--ink),6px 7px 0 rgba(0,0,0,.5);background:#000;}
+  #game{display:block;width:100%;height:auto;image-rendering:pixelated;cursor:crosshair;}
+
+  #hud{position:absolute;top:8px;left:8px;z-index:5;pointer-events:none;}
+  .meter{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+  .meter canvas{width:22px;height:22px;image-rendering:pixelated;}
+  .barbox{width:110px;height:10px;background:rgba(0,0,0,.55);border:2px solid var(--ink);outline:1px solid rgba(232,226,208,.35);}
+  .bar{height:100%;width:100%;transition:width .2s;}
+  #clock{position:absolute;top:8px;right:8px;z-index:5;text-align:right;pointer-events:none;
+    font-family:Consolas,monospace;font-size:13px;color:var(--bone);text-shadow:1px 1px 0 #000;}
+  #clock .phase{color:var(--gold);}
+  #daybar{width:110px;height:5px;background:rgba(0,0,0,.55);border:1px solid rgba(232,226,208,.4);margin-top:4px;margin-left:auto;}
+  #dayfill{height:100%;background:var(--gold);width:0%;}
+
+  #toasts{position:absolute;top:44px;left:50%;transform:translateX(-50%);z-index:8;
+    display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;width:90%;}
+  .toast{background:rgba(13,11,22,.88);border:2px solid var(--bone);color:var(--bone);
+    padding:4px 12px;font-size:12.5px;letter-spacing:1px;box-shadow:3px 3px 0 rgba(0,0,0,.4);
+    animation:tIn .18s ease;}
+  .toast.warn{border-color:var(--seal);color:#f0a0a0;}
+  .toast.cold{border-color:var(--tmp);color:#bcd8ec;}
+  @keyframes tIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;}}
+
+  #inv{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);z-index:6;display:flex;gap:5px;}
+  .slot{width:44px;height:44px;background:rgba(13,11,22,.82);border:2px solid rgba(232,226,208,.4);
+    position:relative;cursor:pointer;}
+  .slot.sel{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold);}
+  .slot canvas{width:100%;height:100%;image-rendering:pixelated;display:block;}
+  .slot .n{position:absolute;right:2px;bottom:0;font-family:Consolas,monospace;font-size:12px;
+    color:var(--bone);text-shadow:1px 1px 0 #000;pointer-events:none;}
+  .slot .key{position:absolute;left:2px;top:0;font-family:Consolas,monospace;font-size:9px;
+    color:rgba(232,226,208,.5);pointer-events:none;}
+  .slot .dur{position:absolute;left:2px;right:2px;bottom:2px;height:3px;background:rgba(0,0,0,.6);}
+  .slot .dur i{display:block;height:100%;background:var(--gold);}
+
+  #btnRow{position:absolute;bottom:8px;right:8px;z-index:6;display:flex;gap:6px;}
+  button{background:var(--bone);color:var(--ink);border:3px solid var(--ink);
+    box-shadow:3px 3px 0 rgba(0,0,0,.5);font-family:"Microsoft YaHei",sans-serif;
+    font-size:12px;font-weight:bold;letter-spacing:2px;padding:6px 12px;cursor:pointer;}
+  button:hover{background:#fff;}
+  button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 rgba(0,0,0,.5);}
+  button:disabled{opacity:.45;cursor:default;}
+  button:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+  #craft{position:absolute;right:8px;bottom:52px;z-index:7;width:238px;
+    background:rgba(13,11,22,.94);border:3px solid var(--bone);box-shadow:4px 4px 0 rgba(0,0,0,.5);
+    padding:8px;display:none;}
+  #craft.open{display:block;}
+  #craft h3{margin:0 0 6px;font-size:13px;letter-spacing:3px;color:var(--gold);
+    font-family:"Noto Serif SC","SimSun",serif;border-bottom:1px solid rgba(232,226,208,.3);padding-bottom:4px;}
+  #recipes{max-height:236px;overflow-y:auto;}
+  #recipes::-webkit-scrollbar{width:6px;} #recipes::-webkit-scrollbar-thumb{background:rgba(232,226,208,.3);}
+  .recipe{display:flex;align-items:center;gap:7px;padding:5px 2px;border-bottom:1px dashed rgba(232,226,208,.15);}
+  .recipe canvas{width:26px;height:26px;image-rendering:pixelated;flex:none;}
+  .recipe .info{flex:1;min-width:0;}
+  .recipe .nm{font-size:12px;}
+  .recipe .cost{font-size:10px;color:var(--bone-dim);font-family:Consolas,monospace;}
+  .recipe .cost .ok{color:#9cd68a;} .recipe .cost .no{color:#e08a8a;}
+  .recipe button{padding:3px 8px;font-size:11px;letter-spacing:0;}
+  #craft .tip{font-size:10px;color:var(--bone-dim);margin-top:6px;line-height:1.5;}
+
+  /* quest tracker */
+  #quest{position:absolute;top:126px;left:8px;z-index:5;width:180px;
+    background:rgba(13,11,22,.78);border:2px solid rgba(232,226,208,.35);
+    padding:5px 8px;font-size:11px;line-height:1.55;pointer-events:none;display:none;}
+  #quest .qh{display:flex;justify-content:space-between;align-items:center;
+    font-family:Consolas,monospace;font-size:10px;letter-spacing:2px;color:var(--gold);margin-bottom:3px;}
+  #quest .qh i{font-style:normal;color:var(--bone-dim);}
+  #qskip{cursor:pointer;color:var(--bone-dim);pointer-events:auto;font-size:13px;padding:0 3px;}
+  #qskip:hover{color:#fff;}
+  #qdone{color:#9cd68a;text-decoration:line-through;opacity:.7;}
+  #qcur{color:var(--bone);}
+
+  /* help */
+  #helpOv{z-index:30;}
+  #helpBox{width:min(540px,94%);max-height:90%;overflow-y:auto;background:rgba(13,11,22,.97);
+    border:3px solid var(--bone);box-shadow:5px 5px 0 rgba(0,0,0,.5);padding:12px 14px;text-align:left;}
+  #helpBox::-webkit-scrollbar{width:6px;} #helpBox::-webkit-scrollbar-thumb{background:rgba(232,226,208,.3);}
+  #helpBox h3{margin:0 0 8px;font-size:15px;letter-spacing:3px;color:var(--gold);
+    font-family:"Noto Serif SC","SimSun",serif;}
+  #helpTabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+  #helpTabs button{font-size:11px;padding:4px 8px;letter-spacing:1px;}
+  #helpTabs button.on{background:var(--gold);}
+  .hsec{display:none;font-size:12.5px;line-height:1.85;color:var(--bone-dim);}
+  .hsec.on{display:block;}
+  .hsec b{color:var(--gold);font-weight:normal;}
+  .hsec h4{color:var(--bone);margin:10px 0 4px;font-size:13px;letter-spacing:2px;}
+  .hsec table{border-collapse:collapse;width:100%;font-size:12px;}
+  .hsec td{border:1px solid rgba(232,226,208,.2);padding:3px 8px;}
+  .hsec .foe{display:flex;gap:10px;align-items:center;margin:7px 0;}
+  .hsec .foe canvas{width:36px;height:36px;image-rendering:pixelated;flex:none;
+    background:#0d0b16;border:1px solid rgba(232,226,208,.25);}
+  #helpClose{margin-top:12px;}
+
+  .overlay{position:absolute;inset:0;z-index:20;background:rgba(10,8,20,.9);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:14px;}
+  .overlay h2{font-family:"Noto Serif SC","SimSun",serif;font-size:34px;letter-spacing:10px;margin:0 0 10px;}
+  .overlay .sub{color:var(--bone-dim);font-size:12.5px;line-height:1.85;max-width:460px;}
+  .overlay .sub b{color:var(--gold);font-weight:normal;}
+  .overlay .big{font-size:16px;color:var(--gold);margin:10px 0 0;}
+  .overlay .btns{display:flex;gap:12px;margin-top:16px;}
+  .overlay button{font-size:15px;padding:10px 22px;}
+  #deathOv h2{color:var(--seal);}
+  .hidden{display:none !important;}
+
+  footer{margin-top:14px;text-align:center;font-family:Consolas,monospace;font-size:10px;
+    letter-spacing:2px;color:rgba(232,226,208,.4);}
+</style>
+
+<div id="wrap">
+  <header>
+    <div class="eyebrow">A tiny survival game · v2 seasons build</div>
+    <h1>荒夜求生</h1>
+  </header>
+
+  <div id="stage">
+    <canvas id="game" width="480" height="300"></canvas>
+
+    <div id="hud"></div>
+    <div id="clock">
+      <div><span id="seasonN"></span>第 <span id="dayN">1</span> 天 · <span class="phase" id="phaseN">白天</span></div>
+      <div id="daybar"><div id="dayfill"></div></div>
+    </div>
+    <div id="toasts"></div>
+    <div id="quest">
+      <div class="qh">新手指引 <i id="qstep"></i><span id="qskip" title="跳过指引">×</span></div>
+      <div id="qdone"></div>
+      <div id="qcur"></div>
+    </div>
+    <div id="inv"></div>
+    <div id="btnRow">
+      <button id="helpBtn" title="H">帮助 (H)</button>
+      <button id="sndBtn" title="M">♪</button>
+      <button id="craftBtn">合成 (C)</button>
+    </div>
+    <div id="craft">
+      <h3>合 成</h3>
+      <div id="recipes"></div>
+      <div class="tip">烹饪：手持生食点击燃烧的火。添柴：手持木头/草点火。<br>种田：手持种子点击农田。种子偶尔从割草/采浆果获得。</div>
+    </div>
+
+    <div class="overlay" id="titleOv">
+      <h2>荒夜求生</h2>
+      <div class="sub">
+        荒岛求生：白天采集合成，<b>天黑之前必须有火</b>。<br>
+        每隔几天，<b>寒冬</b>会降临——浆果冻结、湖面结冰、远离火堆会失温。<br>
+        偶尔，你会听见远处的<b>狗叫</b>。跑是跑不掉的。<br><br>
+        <b>WASD</b> 移动 · <b>点击</b> 采集/攻击/放置 · <b>空格</b> 攻击最近的敌人<br>
+        <b>1–8</b> 选物品 · <b>右键/E</b> 进食 · <b>C</b> 合成 · <b>M</b> 静音 · <b>P</b> 暂停
+      </div>
+      <div class="big" id="bestLine"></div>
+      <div class="btns">
+        <button id="btnCont" class="hidden">继续冒险</button>
+        <button id="btnStart">新 的 一 夜</button>
+        <button id="btnHelpTitle">玩法说明</button>
+      </div>
+    </div>
+
+    <div class="overlay hidden" id="deathOv">
+      <h2>你 死 了</h2>
+      <div class="sub" id="deathCause"></div>
+      <div class="big" id="deathDays"></div>
+      <div class="btns"><button id="btnRetry">再 试 一 夜</button></div>
+    </div>
+
+    <div class="overlay hidden" id="pauseOv" style="background:rgba(10,8,20,.72)">
+      <h2 style="font-size:22px;letter-spacing:6px;">暂 停</h2>
+      <div class="sub">按 P 继续 · 进度已自动保存</div>
+    </div>
+
+    <div class="overlay hidden" id="helpOv">
+      <div id="helpBox">
+        <h3>生 存 手 册</h3>
+        <div id="helpTabs">
+          <button class="on" data-t="h1">生存法则</button>
+          <button data-t="h2">操作</button>
+          <button data-t="h3">合成与烹饪</button>
+          <button data-t="h4">威胁图鉴</button>
+          <button data-t="h5">季节</button>
+        </div>
+        <div class="hsec on" id="h1">
+          一天分为<b>白天 → 黄昏 → 夜晚</b>。白天安全，黄昏是最后的准备时间，<b>夜晚在黑暗中站 3 秒就会被袭击</b>——必须待在营火、石火坑的光圈里，或手持火把。
+          <h4>四条状态</h4>
+          <b>生命</b>：归零即死，死亡会清空存档。<br>
+          <b>饱食</b>：持续下降，归零后开始扣血。靠进食恢复（右键食物）。<br>
+          <b>理智</b>：夜晚流失，白天、火边、摘花恢复。低于三成会有幻影出现。<br>
+          <b>体温</b>：只在冬天流失，靠近燃烧的火恢复。冻到零度开始扣血。<br>
+          <h4>一句话攻略</h4>
+          白天拼命囤，黄昏回营地，夜里守着火。存活天数是唯一的勋章。
+        </div>
+        <div class="hsec" id="h2">
+          <table>
+            <tr><td>WASD / 方向键</td><td>移动</td></tr>
+            <tr><td>鼠标左键</td><td>采集 / 攻击 / 放置（先在物品栏选中要用的东西）</td></tr>
+            <tr><td>右键物品 或 E</td><td>吃掉 / 使用选中的物品</td></tr>
+            <tr><td>空格</td><td>攻击身边最近的敌人</td></tr>
+            <tr><td>1–8</td><td>快捷选择物品栏</td></tr>
+            <tr><td>C</td><td>合成面板</td></tr>
+            <tr><td>H</td><td>本手册</td></tr>
+            <tr><td>M / P</td><td>静音 / 暂停</td></tr>
+          </table>
+        </div>
+        <div class="hsec" id="h3">
+          <h4>开局路线</h4>
+          捡地上的<b>树枝×2 + 燧石×2</b> → 合成斧头 → 砍树得木头 → 割草×3 → 合成营火，天黑前放好。
+          <h4>火的操作</h4>
+          <b>烹饪</b>：手持生食（浆果/生肉）点击燃烧的火。<br>
+          <b>添柴</b>：手持木头或干草点击火。<br>
+          <b>石火坑</b>：耗柴减半、永不消失，是营地的核心建筑。
+          <h4>进阶</h4>
+          <b>农田</b>放在草地上，手持种子点击播种，约一天后收获（冬天休眠）。种子来自割草和摘浆果。<br>
+          <b>石墙</b>能挡住蜘蛛（猎犬会咬碎）。<b>绷带</b>（蛛丝×2+草）是唯一的主动回血手段。<b>背包</b>一次性 +4 格。
+        </div>
+        <div class="hsec" id="h4">
+          <div class="foe"><canvas id="foe1" width="28" height="28"></canvas><div><b>蜘蛛</b> · 只在夜间出没，天亮钻回地下。掉生肉，偶尔掉蛛丝。长矛两三下解决。</div></div>
+          <div class="foe"><canvas id="foe2" width="28" height="28"></canvas><div><b>猎犬</b> · 每隔几天袭击一波，狗叫声就是倒计时。比你跑得快，会咬碎石墙——正面迎战。</div></div>
+          <div class="foe"><canvas id="foe3" width="28" height="28"></canvas><div><b>幻影</b> · 理智过低时出现。打死它+20理智；理智回升它会自行消散。</div></div>
+          <div class="foe"><canvas id="foe4" width="28" height="28"></canvas><div><b>黑暗</b> · 夜里无光 3 秒后开始受击。本游戏的头号死因。</div></div>
+          <div class="foe"><canvas id="foe5" width="28" height="28"></canvas><div><b>蜘蛛巢</b> · 森林深处，夜里不断孵蜘蛛。捣毁它掉 3 蛛丝。</div></div>
+        </div>
+        <div class="hsec" id="h5">
+          每 6 天里的<b>最后 2 天是冬天</b>（第 5–6 天、11–12 天……），前一天会有预警。
+          <h4>冬天的规则</h4>
+          浆果与草全部冻结，农田休眠——<b>只能吃库存</b>。<br>
+          远离火堆会流失体温，冻到零度开始扣血。<br>
+          <b>湖面结冰可以行走</b>，能抄近道，但开春冰面会化。
+          <h4>备冬清单</h4>
+          柴（木头/草）越多越好 · 熟食 6 份以上 · 一支火把 · 一两张绷带。
+        </div>
+        <button id="helpClose">关 闭 (H)</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>SURVIVE THE WILD NIGHT · v2 · 冬天会来，狗也会来</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============ helpers ============ */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function clamp(v,a,b){return v<a?a:(v>b?b:v);}
+function dist(x1,y1,x2,y2){var dx=x1-x2,dy=y1-y2;return Math.sqrt(dx*dx+dy*dy);}
+function R(g,x,y,w,h,c){g.fillStyle=c;g.fillRect(x|0,y|0,w|0,h|0);}
+function disc(g,cx,cy,r,c){cx|=0;cy|=0;for(var y=-r;y<=r;y++){var w=Math.floor(Math.sqrt(r*r-y*y));R(g,cx-w,cy+y,2*w+1,1,c);}}
+function hash2(x,y){var h=(x*374761393+y*668265263)|0;h=(h^(h>>13))|0;h=Math.imul(h,1274126177);h=(h^(h>>16))>>>0;return h/4294967296;}
+
+/* ============ constants ============ */
+var T=24, MAPW=96, MAPH=96, VW=480, VH=300;
+var DAY_LEN=100, DUSK_LEN=35, NIGHT_LEN=45, CYCLE=DAY_LEN+DUSK_LEN+NIGHT_LEN;
+var SAVE_KEY='wildnight-save';
+
+/* ============ items ============ */
+var ITEMS={
+  wood:      {nm:'木头',   stack:20},
+  twig:      {nm:'树枝',   stack:20},
+  grass:     {nm:'干草',   stack:20},
+  flint:     {nm:'燧石',   stack:20},
+  stone:     {nm:'石头',   stack:20},
+  silk:      {nm:'蛛丝',   stack:20},
+  seed:      {nm:'种子',   stack:20},
+  berries:   {nm:'浆果',   stack:20, eat:{hun:12}},
+  berriesC:  {nm:'烤浆果', stack:20, eat:{hun:18,hp:2}},
+  carrot:    {nm:'胡萝卜', stack:20, eat:{hun:16}},
+  meat:      {nm:'生肉',   stack:20, eat:{hun:10,san:-10}},
+  meatC:     {nm:'烤肉',   stack:20, eat:{hun:28,hp:5}},
+  bandage:   {nm:'绷带',   stack:10, eat:{hp:25}},
+  axe:       {nm:'斧头',   tool:1, dur:30},
+  pickaxe:   {nm:'镐',     tool:1, dur:30},
+  spear:     {nm:'长矛',   tool:1, dur:40},
+  torch:     {nm:'火把',   tool:1, dur:100},
+  campfire:  {nm:'营火',   stack:5},
+  firepit:   {nm:'石火坑', stack:3},
+  wall:      {nm:'石墙',   stack:10},
+  farm:      {nm:'农田',   stack:5}
+};
+var COOK={berries:'berriesC', meat:'meatC'};
+var RECIPES=[
+  {id:'axe',      cost:{twig:2,flint:2}, desc:'砍树'},
+  {id:'pickaxe',  cost:{twig:2,flint:2}, desc:'采矿'},
+  {id:'spear',    cost:{twig:2,flint:1,grass:2}, desc:'战斗'},
+  {id:'torch',    cost:{grass:2,twig:2}, desc:'移动光源'},
+  {id:'campfire', cost:{grass:3,wood:2}, desc:'夜晚的命'},
+  {id:'firepit',  cost:{stone:6,wood:2}, desc:'省柴·永不消失'},
+  {id:'wall',     cost:{stone:3}, n:2, desc:'挡住蜘蛛(狗会咬碎)'},
+  {id:'farm',     cost:{wood:2,grass:2,stone:1}, desc:'种菜(冬天休眠)'},
+  {id:'bandage',  cost:{silk:2,grass:1}, desc:'+25 生命'},
+  {id:'backpack', cost:{grass:4,twig:3}, special:'expand', desc:'背包 +4 格(一次性)'}
+];
+
+/* ============ audio ============ */
+var AC=null, muted=false;
+try{muted=localStorage.getItem('wildnight-muted')==='1';}catch(e){}
+function ac(){if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();return AC;}
+function tone(f,d,delay,type,v){
+  if(muted)return;
+  try{
+    var a=ac(),o=a.createOscillator(),g=a.createGain();
+    o.type=type||'square';o.frequency.value=f;
+    var t0=a.currentTime+(delay||0);
+    g.gain.setValueAtTime(v||0.04,t0);
+    g.gain.exponentialRampToValueAtTime(0.0008,t0+d);
+    o.connect(g);g.connect(a.destination);o.start(t0);o.stop(t0+d+0.02);
+  }catch(e){}
+}
+var sfx={
+  pick:function(){tone(880,.05,0,'triangle',.05);},
+  chop:function(){tone(140,.07,0,'sawtooth',.06);tone(90,.05,.03,'sawtooth',.04);},
+  mine:function(){tone(220,.05,0,'square',.05);tone(180,.05,.04,'square',.04);},
+  craft:function(){tone(660,.08,0,'square',.05);tone(880,.1,.09,'square',.05);},
+  eat:function(){tone(500,.06,0,'triangle',.05);tone(380,.07,.07,'triangle',.05);},
+  hit:function(){tone(200,.06,0,'square',.06);},
+  hurt:function(){tone(150,.15,0,'sawtooth',.07);},
+  place:function(){tone(330,.07,0,'square',.05);tone(440,.07,.08,'square',.05);},
+  dark:function(){tone(90,.4,0,'sawtooth',.08);tone(70,.4,.1,'sawtooth',.07);},
+  die:function(){[330,262,196,131].forEach(function(f,i){tone(f,.3,i*.22,'triangle',.07);});},
+  dawn:function(){[523,659].forEach(function(f,i){tone(f,.15,i*.12,'triangle',.05);});},
+  night:function(){tone(180,.4,0,'triangle',.06);tone(170,.5,.3,'triangle',.05);},
+  bark:function(){tone(240,.09,0,'sawtooth',.07);tone(190,.1,.12,'sawtooth',.07);},
+  wind:function(){tone(120,.8,0,'triangle',.04);tone(110,.9,.2,'triangle',.03);}
+};
+
+/* ============ world state ============ */
+var terr, entIndex, drops, mobs, fires, floats;
+var P, timeSec, dayN, paused=false, dead=false, started=false;
+var darkT=0, spiderClock=0, tutFlags={}, houndNext=0, houndStage=0, saveAcc=0;
+var tutStep=-1, tutMove=0, helpOpen=false;
+function hasItem(id){return P&&P.inv.some(function(s){return s&&s.id===id;});}
+var TUT_STEPS=[
+  {text:'走两步热热身（WASD / 方向键）', check:function(){return tutMove>=2;}},
+  {text:'捡起 2 根树枝和 2 块燧石（点击地上的小东西）', check:function(){return invCount('twig')>=2&&invCount('flint')>=2;}},
+  {text:'按 C 打开合成面板，造一把斧头', check:function(){return hasItem('axe')||invCount('wood')>0;}},
+  {text:'选中斧头，点击树木砍倒它', check:function(){return invCount('wood')>=3||hasItem('campfire')||fires.length>0;}},
+  {text:'收集 3 份干草（点击草丛）', check:function(){return invCount('grass')>=3||hasItem('campfire')||fires.length>0;}},
+  {text:'合成一个营火', check:function(){return hasItem('campfire')||fires.length>0;}},
+  {text:'选中营火，点击地面放置它', check:function(){return fires.length>0;}},
+  {text:'守着火，活过今晚。黎明见。', check:function(){return dayN>=2;}}
+];
+function renderQuest(){
+  var q=document.getElementById('quest');
+  if(tutStep<0||tutStep>=TUT_STEPS.length||!started||dead){q.style.display='none';return;}
+  q.style.display='block';
+  document.getElementById('qstep').textContent=(tutStep+1)+'/'+TUT_STEPS.length;
+  document.getElementById('qdone').textContent=tutStep>0?('✓ '+TUT_STEPS[tutStep-1].text):'';
+  document.getElementById('qcur').textContent='▸ '+TUT_STEPS[tutStep].text;
+}
+var best=0;
+try{best=parseInt(localStorage.getItem('wildnight-best')||'0',10)||0;}catch(e){}
+function isWinter(d){return ((d-1)%6)>=4;}
+function winterNow(){return isWinter(dayN);}
+
+function tileAt(px,py){
+  var tx=Math.floor(px/T),ty=Math.floor(py/T);
+  if(tx<0||ty<0||tx>=MAPW||ty>=MAPH)return 3;
+  return terr[ty*MAPW+tx];
+}
+function entAtTile(tx,ty){return entIndex.get(ty*MAPW+tx);}
+function setEnt(e){entIndex.set(e.ty*MAPW+e.tx,e);}
+function delEnt(e){entIndex.delete(e.ty*MAPW+e.tx);}
+function eCX(e){return e.tx*T+T/2;} function eCY(e){return e.ty*T+T/2;}
+function solidEnt(e){return e && (e.k==='tree'||e.k==='rock'||e.k==='wall');}
+
+function genWorld(seed){
+  var rnd=mulberry32(seed);
+  terr=new Uint8Array(MAPW*MAPH);
+  entIndex=new Map(); drops=[]; mobs=[]; fires=[]; floats=[];
+  function makeGrid(n){var g=[];for(var i=0;i<n*n;i++)g.push(rnd());return g;}
+  var G1=13,g1=makeGrid(G1), G2=29,g2=makeGrid(G2);
+  function samp(grid,n,fx,fy){
+    var x0=Math.floor(fx),y0=Math.floor(fy);
+    var x1=Math.min(x0+1,n-1),y1=Math.min(y0+1,n-1);
+    var ux=fx-x0,uy=fy-y0;
+    var a=grid[y0*n+x0],b=grid[y0*n+x1],c=grid[y1*n+x0],d=grid[y1*n+x1];
+    return (a*(1-ux)+b*ux)*(1-uy)+(c*(1-ux)+d*ux)*uy;
+  }
+  var x,y;
+  for(y=0;y<MAPH;y++)for(x=0;x<MAPW;x++){
+    var n=0.65*samp(g1,G1,x/(MAPW-1)*(G1-1),y/(MAPH-1)*(G1-1))
+         +0.35*samp(g2,G2,x/(MAPW-1)*(G2-1),y/(MAPH-1)*(G2-1));
+    var edge=Math.min(x,y,MAPW-1-x,MAPH-1-y);
+    if(edge<3)n=0;
+    else if(edge<7)n*=(edge-2)/5;
+    var t;
+    if(n<0.34)t=3; else if(n<0.385)t=4; else if(n<0.60)t=0; else if(n<0.74)t=1; else t=2;
+    terr[y*MAPW+x]=t;
+  }
+  var sx=48,sy=48;
+  outer:
+  for(var r=0;r<40;r++){
+    for(y=48-r;y<=48+r;y++)for(x=48-r;x<=48+r;x++){
+      if(x<4||y<4||x>=MAPW-4||y>=MAPH-4)continue;
+      if(terr[y*MAPW+x]===0){sx=x;sy=y;break outer;}
+    }
+  }
+  for(y=sy-2;y<=sy+2;y++)for(x=sx-2;x<=sx+2;x++){
+    if(terr[y*MAPW+x]===3||terr[y*MAPW+x]===4)terr[y*MAPW+x]=0;
+  }
+  for(y=2;y<MAPH-2;y++)for(x=2;x<MAPW-2;x++){
+    if(Math.abs(x-sx)<4&&Math.abs(y-sy)<4)continue;
+    var t2=terr[y*MAPW+x], h=hash2(x,y), e=null;
+    if(t2===1){
+      if(h<0.34)e={k:'tree',hp:5,v:hash2(x*3,y)<0.5?0:1};
+      else if(h<0.38)e={k:'twig'};
+      else if(h<0.41)e={k:'bush',grown:1,rt:0};
+      else if(h>0.985)e={k:'den',hp:8,cd:0};
+    } else if(t2===2){
+      if(h<0.26)e={k:'rock',hp:4};
+      else if(h<0.30)e={k:'flint'};
+      else if(h<0.32)e={k:'stone_g'};
+    } else if(t2===0){
+      if(h<0.02)e={k:'bush',grown:1,rt:0};
+      else if(h<0.05)e={k:'grass',grown:1,rt:0};
+      else if(h<0.062)e={k:'twig'};
+      else if(h<0.068)e={k:'flint'};
+      else if(h<0.076)e={k:'flower'};
+      else if(h<0.081)e={k:'carrot'};
+      else if(h<0.086)e={k:'tree',hp:5,v:0};
+    }
+    if(e){e.tx=x;e.ty=y;setEnt(e);}
+  }
+  var starter=['twig','twig','twig','flint','flint','flint','grass','grass','bush','carrot'];
+  var rr=mulberry32(seed+7);
+  starter.forEach(function(k){
+    for(var tries=0;tries<60;tries++){
+      var ox=sx+Math.floor(rr()*11)-5, oy=sy+Math.floor(rr()*11)-5;
+      if(ox<2||oy<2||ox>=MAPW-2||oy>=MAPH-2)continue;
+      if(terr[oy*MAPW+ox]!==0)continue;
+      if(entAtTile(ox,oy))continue;
+      if(Math.abs(ox-sx)<2&&Math.abs(oy-sy)<2)continue;
+      var e={k:k,tx:ox,ty:oy};
+      if(k==='bush'||k==='grass'){e.grown=1;e.rt=0;}
+      setEnt(e);break;
+    }
+  });
+  P={x:sx*T+T/2,y:sy*T+T/2,dir:2,moving:false,
+     hp:100,hun:100,san:100,temp:100,slot:0,slotsMax:8,inv:[],
+     swingT:-9,hurtT:-9,atkCd:0};
+  for(var i=0;i<12;i++)P.inv.push(null);
+  timeSec=0;dayN=1;darkT=0;spiderClock=0;dead=false;tutFlags={};
+  houndNext=CYCLE*2+DAY_LEN*(0.3+Math.random()*0.4);houndStage=0;
+  tutStep=0;tutMove=0;
+}
+
+/* ============ save / load ============ */
+function terrToB64(){
+  var s='';
+  for(var i=0;i<terr.length;i+=4000)
+    s+=String.fromCharCode.apply(null,Array.prototype.slice.call(terr.subarray(i,i+4000)));
+  return btoa(s);
+}
+function terrFromB64(b){
+  var s=atob(b);terr=new Uint8Array(s.length);
+  for(var i=0;i<s.length;i++)terr[i]=s.charCodeAt(i);
+}
+function saveGame(){
+  if(!started||dead)return;
+  try{
+    var ents=[];entIndex.forEach(function(e){
+      var c={k:e.k,tx:e.tx,ty:e.ty};
+      ['hp','grown','rt','v','st','gt','cd'].forEach(function(f){if(e[f]!==undefined)c[f]=e[f];});
+      ents.push(c);
+    });
+    var o={v:2,terr:terrToB64(),ents:ents,
+      drops:drops.map(function(d){return {item:d.item,n:d.n,x:d.x,y:d.y};}),
+      fires:fires,
+      P:{x:P.x,y:P.y,hp:P.hp,hun:P.hun,san:P.san,temp:P.temp,slot:P.slot,slotsMax:P.slotsMax,inv:P.inv},
+      timeSec:timeSec,dayN:dayN,tutFlags:tutFlags,houndNext:houndNext,houndStage:houndStage,
+      tutStep:tutStep,tutMove:tutMove};
+    localStorage.setItem(SAVE_KEY,JSON.stringify(o));
+  }catch(e){}
+}
+function hasSave(){try{return !!localStorage.getItem(SAVE_KEY);}catch(e){return false;}}
+function loadGame(){
+  try{
+    var o=JSON.parse(localStorage.getItem(SAVE_KEY));
+    if(!o||o.v!==2)return false;
+    terrFromB64(o.terr);
+    entIndex=new Map();o.ents.forEach(function(e){setEnt(e);});
+    drops=o.drops||[];fires=o.fires||[];mobs=[];floats=[];
+    P={x:o.P.x,y:o.P.y,dir:2,moving:false,
+       hp:o.P.hp,hun:o.P.hun,san:o.P.san,temp:(o.P.temp!==undefined?o.P.temp:100),
+       slot:o.P.slot||0,slotsMax:o.P.slotsMax||8,inv:o.P.inv,
+       swingT:-9,hurtT:-9,atkCd:0};
+    while(P.inv.length<12)P.inv.push(null);
+    timeSec=o.timeSec;dayN=o.dayN;tutFlags=o.tutFlags||{};
+    houndNext=o.houndNext||timeSec+2*CYCLE;houndStage=o.houndStage||0;
+    tutStep=(o.tutStep!==undefined?o.tutStep:-1);tutMove=o.tutMove||0;
+    darkT=0;spiderClock=0;dead=false;
+    return true;
+  }catch(e){return false;}
+}
+function clearSave(){try{localStorage.removeItem(SAVE_KEY);}catch(e){}}
+
+/* ============ time ============ */
+function phase(){var t=timeSec%CYCLE;return t<DAY_LEN?0:(t<DAY_LEN+DUSK_LEN?1:2);}
+function phaseName(){return ['白天','黄昏','夜晚'][phase()];}
+function darknessAlpha(){
+  var t=timeSec%CYCLE;
+  if(t<DAY_LEN-6)return 0;
+  if(t<DAY_LEN)return (t-(DAY_LEN-6))/6*0.30;
+  if(t<DAY_LEN+DUSK_LEN)return 0.30+(t-DAY_LEN)/DUSK_LEN*0.28;
+  var nt=t-DAY_LEN-DUSK_LEN;
+  if(nt<4)return 0.58+nt/4*0.34;
+  return 0.92;
+}
+
+/* ============ inventory ============ */
+function invCount(id){var n=0;P.inv.forEach(function(s){if(s&&s.id===id)n+=s.n;});return n;}
+function addItem(id,n){
+  n=n||1;var def=ITEMS[id];
+  if(def.tool){
+    for(var i=0;i<P.slotsMax;i++)if(!P.inv[i]){P.inv[i]={id:id,n:1,dur:def.dur};renderInv();return true;}
+    toast('背包满了！','warn');return false;
+  }
+  var left=n;
+  for(var i=0;i<P.slotsMax;i++){var s=P.inv[i];
+    if(s&&s.id===id&&s.n<def.stack){var add=Math.min(left,def.stack-s.n);s.n+=add;left-=add;if(!left)break;}
+  }
+  for(i=0;i<P.slotsMax&&left;i++)if(!P.inv[i]){var add2=Math.min(left,def.stack);P.inv[i]={id:id,n:add2};left-=add2;}
+  renderInv();
+  if(left){toast('背包满了！','warn');return false;}
+  return true;
+}
+function removeItem(id,n){
+  var left=n;
+  for(var i=0;i<12&&left;i++){var s=P.inv[i];
+    if(s&&s.id===id){var take=Math.min(left,s.n);s.n-=take;left-=take;if(s.n<=0)P.inv[i]=null;}
+  }
+  renderInv();
+}
+function held(){return P.inv[P.slot];}
+function damageTool(slot,amt){
+  var s=P.inv[slot];if(!s||!ITEMS[s.id].tool)return;
+  s.dur-=amt;
+  if(s.dur<=0){toast(ITEMS[s.id].nm+' 用坏了','warn');P.inv[slot]=null;}
+  renderInv();
+}
+function eatSlot(i){
+  var s=P.inv[i];if(!s)return;
+  var e=ITEMS[s.id].eat;
+  if(!e){toast('这个不能吃');return;}
+  P.hun=clamp(P.hun+(e.hun||0),0,100);
+  P.hp=clamp(P.hp+(e.hp||0),0,100);
+  P.san=clamp(P.san+(e.san||0),0,100);
+  var fy=P.y-18;
+  if(e.hun){addFloat(P.x,fy,'+'+e.hun+' 饱食','#e0a33a');fy-=8;}
+  if(e.hp){addFloat(P.x,fy,'+'+e.hp+' 生命','#d05050');fy-=8;}
+  if(e.san&&e.san<0)addFloat(P.x,fy,e.san+' 理智','#8a7fd6');
+  s.n--;if(s.n<=0)P.inv[i]=null;
+  renderInv();sfx.eat();
+}
+
+/* ============ crafting ============ */
+function canCraft(r){for(var k in r.cost)if(invCount(k)<r.cost[k])return false;return true;}
+function doCraft(r){
+  if(!canCraft(r))return;
+  if(r.special==='expand'){
+    if(P.slotsMax>=12){toast('背包已经扩过了');return;}
+    for(var k in r.cost)removeItem(k,r.cost[k]);
+    P.slotsMax=12;renderInv();sfx.craft();
+    toast('背包扩容！+4 格');renderCraft();return;
+  }
+  for(var k2 in r.cost)removeItem(k2,r.cost[k2]);
+  addItem(r.id,r.n||1);sfx.craft();
+  toast('合成了 '+ITEMS[r.id].nm+(r.n>1?' ×'+r.n:''));
+  if(r.id==='axe'&&!tutFlags.axe){tutFlags.axe=1;toast('用斧头点击树木砍伐');}
+  if(r.id==='campfire'&&!tutFlags.fire){tutFlags.fire=1;toast('选中营火，点击脚边的地面放置');}
+  if(r.id==='farm'&&!tutFlags.farm){tutFlags.farm=1;toast('把农田放在草地上，再用种子点它');}
+  renderCraft();
+}
+
+/* ============ movement / collision ============ */
+function waterBlocked(){return !winterNow();}
+function walkable(px,py){
+  if(px<T||py<T||px>MAPW*T-T||py>MAPH*T-T)return false;
+  var r=5;
+  var pts=[[px-r,py],[px+r,py],[px,py-r],[px,py+r]];
+  for(var i=0;i<4;i++)if(tileAt(pts[i][0],pts[i][1])===3&&waterBlocked())return false;
+  var tx=Math.floor(px/T),ty=Math.floor(py/T);
+  for(var oy=-1;oy<=1;oy++)for(var ox=-1;ox<=1;ox++){
+    var e=entAtTile(tx+ox,ty+oy);
+    if(solidEnt(e)&&dist(px,py,eCX(e),eCY(e))<12)return false;
+  }
+  return true;
+}
+function mobWalkable(px,py){
+  if(px<T||py<T||px>MAPW*T-T||py>MAPH*T-T)return false;
+  if(tileAt(px,py)===3&&waterBlocked())return false;
+  var tx=Math.floor(px/T),ty=Math.floor(py/T);
+  for(var oy=-1;oy<=1;oy++)for(var ox=-1;ox<=1;ox++){
+    var e=entAtTile(tx+ox,ty+oy);
+    if(solidEnt(e)&&dist(px,py,eCX(e),eCY(e))<11)return false;
+  }
+  return true;
+}
+function findLand(){
+  var ptx=Math.floor(P.x/T),pty=Math.floor(P.y/T);
+  for(var r=1;r<30;r++){
+    for(var oy=-r;oy<=r;oy++)for(var ox=-r;ox<=r;ox++){
+      var x=ptx+ox,y=pty+oy;
+      if(x<2||y<2||x>=MAPW-2||y>=MAPH-2)continue;
+      var t=terr[y*MAPW+x];
+      if(t!==3&&!solidEnt(entAtTile(x,y))){P.x=x*T+T/2;P.y=y*T+T/2;return;}
+    }
+  }
+}
+
+/* ============ interaction ============ */
+function addFloat(x,y,txt,c){floats.push({x:x,y:y,txt:txt,c:c||'#e8e2d0',t:0});}
+function toast(msg,cls){
+  var box=document.getElementById('toasts');
+  var d=document.createElement('div');d.className='toast'+(cls?' '+cls:'');d.textContent=msg;
+  box.appendChild(d);
+  setTimeout(function(){d.style.opacity='0';d.style.transition='opacity .4s';},2600);
+  setTimeout(function(){d.remove();},3100);
+  while(box.children.length>4)box.firstChild.remove();
+}
+
+function harvest(e){
+  var ex=eCX(e),ey=eCY(e);
+  var h=held(), hid=h?h.id:null;
+  switch(e.k){
+    case 'twig': delEnt(e);addItem('twig',1);addFloat(ex,ey-10,'+1 树枝');sfx.pick();break;
+    case 'flint':delEnt(e);addItem('flint',1);addFloat(ex,ey-10,'+1 燧石');sfx.pick();break;
+    case 'stone_g':delEnt(e);addItem('stone',1);addFloat(ex,ey-10,'+1 石头');sfx.pick();break;
+    case 'carrot':delEnt(e);addItem('carrot',1);addFloat(ex,ey-10,'+1 胡萝卜');sfx.pick();break;
+    case 'flower':delEnt(e);P.san=clamp(P.san+5,0,100);addFloat(ex,ey-10,'+5 理智','#8a7fd6');sfx.pick();break;
+    case 'grass':
+      if(winterNow()){toast('草冻住了，掰不动','cold');return;}
+      if(e.grown){
+        e.grown=0;e.rt=CYCLE*0.8;addItem('grass',1);addFloat(ex,ey-10,'+1 干草');sfx.pick();
+        if(Math.random()<0.15){addItem('seed',1);addFloat(ex,ey-20,'+1 种子','#9cd68a');}
+      }
+      else toast('草还没长出来');break;
+    case 'bush':
+      if(winterNow()){toast('浆果丛被冻住了','cold');return;}
+      if(e.grown){
+        e.grown=0;e.rt=CYCLE*1.2;addItem('berries',2);addFloat(ex,ey-10,'+2 浆果');sfx.pick();
+        if(Math.random()<0.15){addItem('seed',1);addFloat(ex,ey-20,'+1 种子','#9cd68a');}
+      }
+      else toast('浆果还没熟');break;
+    case 'tree':
+      if(hid!=='axe'){toast('需要斧头才能砍树');return;}
+      e.hp--;e.shakeT=0.25;sfx.chop();damageTool(P.slot,1);
+      if(e.hp<=0){
+        delEnt(e);var st={k:'stump',tx:e.tx,ty:e.ty};setEnt(st);
+        addItem('wood',3);addFloat(ex,ey-14,'+3 木头');
+        if(hash2(e.tx,e.ty+9)<0.5){addItem('twig',1);addFloat(ex,ey-24,'+1 树枝');}
+      }
+      break;
+    case 'rock':
+      if(hid!=='pickaxe'){toast('需要镐才能采矿');return;}
+      e.hp--;e.shakeT=0.25;sfx.mine();damageTool(P.slot,1);
+      if(e.hp<=0){
+        delEnt(e);addItem('stone',2);addItem('flint',1);
+        addFloat(ex,ey-14,'+2 石头 +1 燧石');
+      }
+      break;
+    case 'den':
+      e.hp--;e.shakeT=0.25;sfx.hit();
+      if(hid&&ITEMS[hid].tool&&hid!=='torch')damageTool(P.slot,1);
+      if(e.hp<=0){
+        delEnt(e);addItem('silk',3);addItem('meat',1);
+        addFloat(ex,ey-14,'+3 蛛丝 +1 生肉');
+        toast('捣毁了蜘蛛巢');
+      } else addFloat(ex,ey-12,'巢在蠕动…','#c0a8d8');
+      break;
+    case 'farm':
+      if(e.st===0){
+        if(hid==='seed'){
+          if(winterNow()){toast('冬天种不了东西','cold');return;}
+          removeItem('seed',1);e.st=1;e.gt=CYCLE*0.8;
+          addFloat(ex,ey-10,'播种了');sfx.place();
+        } else toast('农田空着。手持种子点击播种');
+      } else if(e.st===1){
+        toast(winterNow()?'作物在冬眠……':'还在生长……');
+      } else {
+        e.st=0;
+        if(Math.random()<0.6){addItem('carrot',2);addFloat(ex,ey-10,'+2 胡萝卜');}
+        else{addItem('berries',3);addFloat(ex,ey-10,'+3 浆果');}
+        if(Math.random()<0.25){addItem('seed',1);addFloat(ex,ey-20,'+1 种子','#9cd68a');}
+        sfx.pick();
+      }
+      break;
+    case 'wall': toast('结实的石墙。');break;
+    case 'stump': toast('一截树桩。');break;
+  }
+}
+
+function fireAt(x,y,rad){
+  for(var i=0;i<fires.length;i++){
+    var f=fires[i];
+    if(dist(x,y,f.x,f.y)<(rad||14))return f;
+  }
+  return null;
+}
+function placeOnTile(wx,wy,kind){
+  var tx=Math.floor(wx/T),ty=Math.floor(wy/T);
+  if(tx<2||ty<2||tx>=MAPW-2||ty>=MAPH-2){toast('放不了');return false;}
+  if(dist(P.x,P.y,tx*T+T/2,ty*T+T/2)>60){toast('放近一点');return false;}
+  if(entAtTile(tx,ty)){toast('这里已经有东西了');return false;}
+  var t=terr[ty*MAPW+tx];
+  if(t===3){toast('不能放在水上');return false;}
+  if(kind==='farm'&&t!==0){toast('农田只能放在草地上');return false;}
+  if(fireAt(tx*T+T/2,ty*T+T/2,24)){toast('离火太近了');return false;}
+  var e={k:kind,tx:tx,ty:ty};
+  if(kind==='wall')e.hp=20;
+  if(kind==='farm'){e.st=0;e.gt=0;}
+  setEnt(e);
+  return true;
+}
+
+function clickWorld(wx,wy){
+  var h=held(), hid=h?h.id:null;
+  var bestM=null,bd=1e9;
+  mobs.forEach(function(m){
+    var d=dist(wx,wy,m.x,m.y);
+    if(d<20&&d<bd){bd=d;bestM=m;}
+  });
+  if(bestM&&dist(P.x,P.y,bestM.x,bestM.y)<34){attackMob(bestM);return;}
+  var f=fireAt(wx,wy,16);
+  if(f){
+    if(dist(P.x,P.y,f.x,f.y)>44){toast('太远了');return;}
+    if(hid==='wood'){f.fuel=clamp(f.fuel+40,0,100);removeItem('wood',1);addFloat(f.x,f.y-16,'+柴');sfx.place();return;}
+    if(hid==='grass'){f.fuel=clamp(f.fuel+14,0,100);removeItem('grass',1);addFloat(f.x,f.y-16,'+柴');sfx.place();return;}
+    if(hid&&COOK[hid]&&f.fuel>0){
+      removeItem(hid,1);addItem(COOK[hid],1);
+      addFloat(f.x,f.y-16,'烤好了！','#f2d18b');sfx.eat();return;
+    }
+    toast(f.fuel>0?'温暖的火焰。（手持食物点击可烹饪）':'火已经熄了，添点柴吧');
+    return;
+  }
+  if(hid==='campfire'||hid==='firepit'){
+    if(dist(P.x,P.y,wx,wy)>60){toast('放近一点');return;}
+    if(!walkable(wx,wy)||tileAt(wx,wy)===3){toast('这里放不了');return;}
+    if(fireAt(wx,wy,26)){toast('离另一堆火太近了');return;}
+    fires.push({x:wx,y:wy,fuel:60,pit:hid==='firepit'?1:0});
+    removeItem(hid,1);sfx.place();
+    toast(hid==='firepit'?'石火坑砌好了（更耐烧，永不消失）':'营火燃起来了');
+    return;
+  }
+  if(hid==='wall'){if(placeOnTile(wx,wy,'wall')){removeItem('wall',1);sfx.place();}return;}
+  if(hid==='farm'){if(placeOnTile(wx,wy,'farm')){removeItem('farm',1);sfx.place();}return;}
+  var tx=Math.floor(wx/T),ty=Math.floor(wy/T),bestE=null,bd2=1e9;
+  for(var oy=-1;oy<=1;oy++)for(var ox=-1;ox<=1;ox++){
+    var e=entAtTile(tx+ox,ty+oy);
+    if(!e)continue;
+    var d=dist(wx,wy,eCX(e),eCY(e));
+    if(d<16&&d<bd2){bd2=d;bestE=e;}
+  }
+  if(bestE){
+    if(dist(P.x,P.y,eCX(bestE),eCY(bestE))>42){toast('太远了，走近点');return;}
+    harvest(bestE);return;
+  }
+  P.swingT=0.001;
+}
+
+function attackMob(m){
+  if(P.atkCd>0)return;
+  P.atkCd=0.45;P.swingT=0.001;
+  var h=held(),dmg=5,slot=P.slot;
+  if(h){if(h.id==='spear')dmg=17;else if(h.id==='axe'||h.id==='pickaxe')dmg=8;else if(h.id==='torch')dmg=6;}
+  m.hp-=dmg;m.hurtT=0.2;sfx.hit();
+  if(h&&ITEMS[h.id].tool&&h.id!=='torch')damageTool(slot,1);
+  addFloat(m.x,m.y-14,'-'+dmg,'#f0a0a0');
+  if(m.hp<=0){
+    if(m.k==='spider'){
+      drops.push({item:'meat',n:1,x:m.x,y:m.y});
+      if(Math.random()<0.4)drops.push({item:'silk',n:1,x:m.x+8,y:m.y+4});
+      addFloat(m.x,m.y-10,'蜘蛛死了');
+    } else if(m.k==='hound'){
+      drops.push({item:'meat',n:1,x:m.x,y:m.y});
+      if(Math.random()<0.35)drops.push({item:'meat',n:1,x:m.x+8,y:m.y+4});
+      addFloat(m.x,m.y-10,'猎犬倒下了');
+    } else {
+      P.san=clamp(P.san+20,0,100);
+      addFloat(m.x,m.y-10,'+20 理智','#8a7fd6');
+    }
+    mobs.splice(mobs.indexOf(m),1);
+  }
+}
+
+/* ============ mobs ============ */
+function spawnSpider(x,y){
+  if(x===undefined){
+    for(var tries=0;tries<10;tries++){
+      var a=Math.random()*Math.PI*2, d=260+Math.random()*90;
+      var px=P.x+Math.cos(a)*d, py=P.y+Math.sin(a)*d;
+      if(px<T*2||py<T*2||px>(MAPW-2)*T||py>(MAPH-2)*T)continue;
+      if(tileAt(px,py)===3&&waterBlocked())continue;
+      mobs.push({k:'spider',x:px,y:py,hp:32,cd:0,hurtT:0,wt:Math.random()*6});
+      return;
+    }
+  } else mobs.push({k:'spider',x:x,y:y,hp:32,cd:0,hurtT:0,wt:0});
+}
+function spawnHounds(){
+  var n=Math.min(1+Math.floor(dayN/5),4);
+  var a=Math.random()*Math.PI*2;
+  for(var i=0;i<n;i++){
+    var d=300+Math.random()*60, a2=a+(Math.random()-0.5)*0.8;
+    var x=clamp(P.x+Math.cos(a2)*d,T*2,(MAPW-2)*T);
+    var y=clamp(P.y+Math.sin(a2)*d,T*2,(MAPH-2)*T);
+    mobs.push({k:'hound',x:x,y:y,hp:45,cd:0,hurtT:0,wt:0});
+  }
+  toast('⚠ 猎犬扑过来了！×'+n,'warn');sfx.bark();
+}
+function mobStep(m,dx,dy){
+  var blocked=false;
+  var nx=m.x+dx;if(mobWalkable(nx,m.y))m.x=nx;else blocked=true;
+  var ny=m.y+dy;if(mobWalkable(m.x,ny))m.y=ny;else blocked=true;
+  return blocked;
+}
+function nearWall(m){
+  var tx=Math.floor(m.x/T),ty=Math.floor(m.y/T);
+  for(var oy=-1;oy<=1;oy++)for(var ox=-1;ox<=1;ox++){
+    var e=entAtTile(tx+ox,ty+oy);
+    if(e&&e.k==='wall'&&dist(m.x,m.y,eCX(e),eCY(e))<24)return e;
+  }
+  return null;
+}
+function updateMobs(dt){
+  var ph=phase();
+  if(ph===2){
+    spiderClock-=dt;
+    var cap=Math.min(1+Math.floor(dayN/2),4);
+    var cnt=mobs.filter(function(m){return m.k==='spider';}).length;
+    if(spiderClock<=0&&cnt<cap){spawnSpider();spiderClock=9;}
+    // spider dens hatch
+    entIndex.forEach(function(e){
+      if(e.k!=='den')return;
+      e.cd=(e.cd||0)-dt;
+      if(e.cd<=0&&dist(eCX(e),eCY(e),P.x,P.y)<150){
+        spawnSpider(eCX(e),eCY(e)+6);e.cd=20;
+        addFloat(eCX(e),eCY(e)-12,'巢里爬出了蜘蛛！','#c0a8d8');
+      }
+    });
+  }
+  var hasShadow=mobs.some(function(m){return m.k==='shadow';});
+  if(P.san<28&&!hasShadow){
+    var a=Math.random()*Math.PI*2;
+    mobs.push({k:'shadow',x:P.x+Math.cos(a)*220,y:P.y+Math.sin(a)*220,hp:40,cd:0,hurtT:0,wt:0});
+    toast('有什么东西在阴影里蠕动……','warn');
+  }
+  for(var i=mobs.length-1;i>=0;i--){
+    var m=mobs[i];
+    m.hurtT-=dt;m.cd-=dt;m.wt-=dt;
+    if(m.k==='spider'){
+      if(ph===0){mobs.splice(i,1);continue;}
+      var d=dist(m.x,m.y,P.x,P.y);
+      if(d<190){
+        var sp=52*dt;
+        mobStep(m,(P.x-m.x)/d*sp,(P.y-m.y)/d*sp);
+        if(d<18&&m.cd<=0){m.cd=1.3;hurtPlayer(8,'spider');P.san=clamp(P.san-3,0,100);}
+      } else if(m.wt<=0){
+        m.wt=2+Math.random()*3;
+        m.wx=(Math.random()-0.5)*40;m.wy=(Math.random()-0.5)*40;
+      } else if(m.wx){
+        mobStep(m,m.wx*dt*0.4,m.wy*dt*0.4);
+      }
+    } else if(m.k==='hound'){
+      var dh=dist(m.x,m.y,P.x,P.y);
+      if(dh>1){
+        var sph=92*dt;
+        var blocked=mobStep(m,(P.x-m.x)/dh*sph,(P.y-m.y)/dh*sph);
+        if(blocked&&m.cd<=0){
+          var w=nearWall(m);
+          if(w){
+            m.cd=0.8;w.hp-=5;w.shakeT=0.25;sfx.hit();
+            addFloat(eCX(w),eCY(w)-12,'咔！','#c9cdd6');
+            if(w.hp<=0){delEnt(w);addFloat(eCX(w),eCY(w),'石墙碎了！','#e08a8a');}
+          }
+        }
+      }
+      if(dh<19&&m.cd<=0){m.cd=1.1;hurtPlayer(12,'hound');}
+    } else { // shadow
+      if(P.san>45){mobs.splice(i,1);addFloat(m.x,m.y,'幻影消散了','#8a7fd6');continue;}
+      var d2=dist(m.x,m.y,P.x,P.y);
+      var sp2=46*dt;
+      if(d2>1){m.x+=(P.x-m.x)/d2*sp2;m.y+=(P.y-m.y)/d2*sp2;}
+      if(d2<16&&m.cd<=0){m.cd=1.6;hurtPlayer(6,'shadow');P.san=clamp(P.san-8,0,100);}
+    }
+  }
+}
+
+function hurtPlayer(dmg,cause){
+  P.hp-=dmg;P.hurtT=0.3;sfx.hurt();
+  addFloat(P.x,P.y-20,'-'+dmg,'#d05050');
+  if(P.hp<=0)die(cause);
+}
+var CAUSES={hunger:'你饿死了。下次多囤点吃的。',dark:'黑暗中的怪物带走了你。永远不要在夜里离开火光。',
+  spider:'你被蜘蛛咬死了。它们只在夜里出没。',shadow:'理智崩溃，幻影吞噬了你。摘朵花，睡个好觉。',
+  hound:'猎犬把你撕碎了。下次听到狗叫，先做好长矛和石墙。',freeze:'你冻死了。冬天，火就是家。'};
+function die(cause){
+  dead=true;sfx.die();clearSave();
+  if(dayN>best){best=dayN;try{localStorage.setItem('wildnight-best',''+best);}catch(e){}}
+  document.getElementById('deathCause').textContent=CAUSES[cause]||'荒野收回了你。';
+  document.getElementById('deathDays').textContent='存活了 '+dayN+' 天　·　最佳纪录 '+best+' 天';
+  document.getElementById('deathOv').classList.remove('hidden');
+  renderQuest();
+}
+
+/* ============ main update ============ */
+function update(dt){
+  if(paused||helpOpen||dead||!started)return;
+  var prevPhase=phase();
+  timeSec+=dt;
+  if(phase()===0&&prevPhase===2){
+    dayN++;sfx.dawn();
+    if(isWinter(dayN)&&!isWinter(dayN-1)){toast('❄ 冬天来了。远离火会失温，浆果全冻住了','cold');sfx.wind();}
+    else if(!isWinter(dayN)&&isWinter(dayN-1)){toast('☀ 第 '+dayN+' 天 · 冰雪消融，暖季回来了');findLandIfDrowning();}
+    else toast((winterNow()?'❄':'☀')+' 第 '+dayN+' 天');
+    if(!isWinter(dayN)&&isWinter(dayN+1))toast('空气越来越冷……明天冬天就到。囤好柴火和食物！','cold');
+    saveGame();
+  }
+  if(phase()===1&&prevPhase===0){
+    sfx.night();
+    if(!tutFlags.dusk){tutFlags.dusk=1;toast('黄昏了。天黑前必须有火！(C 合成营火)','warn');}
+    else toast('黄昏了……','warn');
+  }
+  if(phase()===2&&prevPhase===1)toast('☾ 入夜了','warn');
+
+  // hound schedule
+  if(houndStage===0&&timeSec>houndNext-25){houndStage=1;toast('你听见了远处的狗叫……','warn');sfx.bark();}
+  if(houndStage===1&&timeSec>houndNext-10){houndStage=2;toast('狗叫声越来越近了！！','warn');sfx.bark();}
+  if(timeSec>houndNext){houndStage=0;spawnHounds();houndNext=timeSec+(2.5+Math.random()*1.5)*CYCLE;}
+
+  // movement
+  var vx=0,vy=0;
+  if(keys.a||keys.ArrowLeft)vx-=1; if(keys.d||keys.ArrowRight)vx+=1;
+  if(keys.w||keys.ArrowUp)vy-=1;   if(keys.s||keys.ArrowDown)vy+=1;
+  if(vx&&vy){vx*=0.707;vy*=0.707;}
+  P.moving=!!(vx||vy);
+  if(vx>0)P.dir=1;else if(vx<0)P.dir=3;else if(vy<0)P.dir=0;else if(vy>0)P.dir=2;
+  var sp=78;
+  var nx=P.x+vx*sp*dt;if(walkable(nx,P.y))P.x=nx;
+  var ny=P.y+vy*sp*dt;if(walkable(P.x,ny))P.y=ny;
+
+  P.atkCd-=dt;if(P.swingT>0)P.swingT+=dt;if(P.swingT>0.28)P.swingT=-9;
+  P.hurtT-=dt;
+
+  // stats
+  P.hun-=0.32*dt;
+  if(P.hun<=0){P.hun=0;P.hp-=1.5*dt;if(P.hp<=0){die('hunger');return;}}
+  var ph=phase(), lit=isLit(P.x,P.y);
+  if(ph===0)P.san=clamp(P.san+0.35*dt,0,100);
+  else if(ph===1)P.san=clamp(P.san-0.25*dt,0,100);
+  else P.san=clamp(P.san-(lit?0.35:1.6)*dt,0,100);
+  var nearFire=fires.some(function(f){return f.fuel>0&&dist(P.x,P.y,f.x,f.y)<50;});
+  if(nearFire)P.san=clamp(P.san+0.5*dt,0,100);
+
+  // temperature
+  if(winterNow()){
+    if(nearFire)P.temp=clamp(P.temp+10*dt,0,100);
+    else{
+      var drain=(ph===2?2.2:1.1);
+      var h0=held();
+      if(h0&&h0.id==='torch')drain*=0.4;
+      P.temp=clamp(P.temp-drain*dt,0,100);
+    }
+    if(P.temp<=0){
+      P.hp-=2*dt;
+      if(!tutFlags.frz){tutFlags.frz=1;toast('你冻得发抖……快回到火边！','cold');}
+      if(P.hp<=0){die('freeze');return;}
+    }
+    if(!tutFlags.tmp&&P.temp<50){tutFlags.tmp=1;toast('体温在流失。靠近火堆取暖','cold');}
+  } else {
+    P.temp=clamp(P.temp+15*dt,0,100);
+  }
+
+  // darkness attacks
+  if(ph===2&&!lit){
+    darkT+=dt;
+    if(darkT>3){darkT=1.2;sfx.dark();hurtPlayer(12,'dark');P.san=clamp(P.san-10,0,100);}
+  } else darkT=0;
+
+  // torch drain
+  var h=held();
+  if(h&&h.id==='torch'&&ph!==0){
+    h.dur-=dt*(100/70);
+    if(h.dur<=0){P.inv[P.slot]=null;toast('火把烧尽了','warn');}
+    invDirty=true;
+  }
+  if(invDirty)renderInv();
+
+  // fires burn
+  fires.forEach(function(f){if(f.fuel>0)f.fuel-=(f.pit?0.55:1.1)*dt;});
+  for(var i=fires.length-1;i>=0;i--)if(!fires[i].pit&&fires[i].fuel<=-30)fires.splice(i,1);
+
+  // regrow & farm growth
+  entIndex.forEach(function(e){
+    if((e.k==='bush'||e.k==='grass')&&!e.grown&&!winterNow()){
+      e.rt-=dt;if(e.rt<=0)e.grown=1;
+    }
+    if(e.k==='farm'&&e.st===1&&!winterNow()){
+      e.gt-=dt;if(e.gt<=0)e.st=2;
+    }
+    if(e.shakeT)e.shakeT-=dt;
+  });
+
+  // drops pickup
+  for(var j=drops.length-1;j>=0;j--){
+    var d=drops[j];
+    if(d.cd&&d.cd>0){d.cd-=dt;continue;}
+    var dd=dist(d.x,d.y,P.x,P.y);
+    if(dd<26){
+      d.x+=(P.x-d.x)*6*dt;d.y+=(P.y-d.y)*6*dt;
+      if(dd<10){
+        if(addItem(d.item,d.n)){addFloat(P.x,P.y-14,'+'+d.n+' '+ITEMS[d.item].nm);sfx.pick();drops.splice(j,1);}
+        else d.cd=2.5;
+      }
+    }
+  }
+
+  updateMobs(dt);
+
+  for(var k=floats.length-1;k>=0;k--){
+    var fl=floats[k];fl.t+=dt;fl.y-=14*dt;
+    if(fl.t>1.3)floats.splice(k,1);
+  }
+
+  if(!tutFlags.hun&&P.hun<35){tutFlags.hun=1;toast('肚子饿了……右键食物进食','warn');}
+  if(!tutFlags.san&&P.san<40){tutFlags.san=1;toast('理智在下降。白天、火堆和花能恢复它','warn');}
+
+  // tutorial quest chain
+  if(tutStep>=0&&tutStep<TUT_STEPS.length){
+    if(P.moving)tutMove+=dt;
+    if(TUT_STEPS[tutStep].check()){
+      tutStep++;
+      tone(880,.08,0,'triangle',.05);tone(1175,.12,.09,'triangle',.05);
+      if(tutStep>=TUT_STEPS.length){
+        tutStep=-1;addItem('berries',3);
+        toast('新手指引完成！奖励浆果×3。荒野不再多嘴了。');
+      }
+      renderQuest();
+    }
+  }
+
+  // autosave
+  saveAcc+=dt;
+  if(saveAcc>15){saveAcc=0;saveGame();}
+
+  updateHUD();
+}
+function findLandIfDrowning(){
+  if(tileAt(P.x,P.y)===3){findLand();toast('冰面化了，你爬上了岸');}
+}
+
+function isLit(x,y){
+  var h=held();
+  if(h&&h.id==='torch')return true;
+  for(var i=0;i<fires.length;i++){
+    var f=fires[i];
+    if(f.fuel>0&&dist(x,y,f.x,f.y)<45+f.fuel*0.9+(f.pit?12:0))return true;
+  }
+  return false;
+}
+
+/* ============ rendering ============ */
+var cv=document.getElementById('game'), g=cv.getContext('2d');
+var lightCv=document.createElement('canvas');lightCv.width=VW;lightCv.height=VH;
+var lg=lightCv.getContext('2d');
+var camX=0,camY=0;
+
+var TCOL_W={0:'#4a7c42',1:'#3d6b39',2:'#6f6f7c',3:'#274d73',4:'#c2ad7d'};
+var TDEC_W={0:'#41703a',1:'#356030',2:'#7d7d8c',4:'#b3a06f'};
+var TCOL_S={0:'#c8d1dc',1:'#b4c2d0',2:'#8d93a2',3:'#9db8d0',4:'#d9d3c2'};
+var TDEC_S={0:'#b8c3d1',1:'#a2b2c4',2:'#9ba1b0',3:'#b6cbde',4:'#c9c2ae'};
+var snow=[];
+(function(){for(var i=0;i<42;i++)snow.push({x:Math.random()*VW,y:Math.random()*VH,s:0.4+Math.random()*0.8,p:Math.random()*7});})();
+
+function render(t){
+  var W=winterNow();
+  var TCOL=W?TCOL_S:TCOL_W, TDEC=W?TDEC_S:TDEC_W;
+  camX=clamp(P.x-VW/2,0,MAPW*T-VW);
+  camY=clamp(P.y-VH/2,0,MAPH*T-VH);
+  var x0=Math.floor(camX/T),y0=Math.floor(camY/T);
+  var x1=Math.ceil((camX+VW)/T),y1=Math.ceil((camY+VH)/T);
+  var x,y;
+  for(y=y0;y<=y1&&y<MAPH;y++)for(x=x0;x<=x1&&x<MAPW;x++){
+    var tt=terr[y*MAPW+x],sx=x*T-camX,sy=y*T-camY;
+    R(g,sx,sy,T,T,TCOL[tt]);
+    var h=hash2(x,y);
+    if(tt===3){
+      if(W){
+        if(h<0.3)R(g,sx+3+h*10,sy+8,7,1,'#c5d6e6');
+        if(h>0.75)R(g,sx+10,sy+15,1,5,'#89a6c2');
+      } else {
+        var w=(Math.floor(t/500)+x+y)%4;
+        if(w===0)R(g,sx+4+h*8,sy+6,5,1,'#2c517d');
+        if(w===2)R(g,sx+10,sy+14+h*4,4,1,'#2c517d');
+      }
+    } else {
+      if(h<0.5)R(g,sx+Math.floor(h*40)%18+3,sy+Math.floor(h*77)%18+3,2,2,TDEC[tt]);
+      if(h>0.8)R(g,sx+Math.floor(h*53)%18+2,sy+Math.floor(h*91)%18+2,1,1,TDEC[tt]);
+    }
+  }
+  var list=[];
+  entIndex.forEach(function(e){
+    var ex=eCX(e),ey=eCY(e);
+    if(ex<camX-30||ex>camX+VW+30||ey<camY-40||ey>camY+VH+30)return;
+    list.push({y:ey+(e.k==='tree'?4:0),f:(function(ee){return function(){drawEnt(ee,t);};})(e)});
+  });
+  drops.forEach(function(d){list.push({y:d.y,f:(function(dd){return function(){drawDrop(dd,t);};})(d)});});
+  fires.forEach(function(f){list.push({y:f.y,f:(function(ff){return function(){drawFire(ff,t);};})(f)});});
+  mobs.forEach(function(m){list.push({y:m.y,f:(function(mm){return function(){drawMob(mm,t);};})(m)});});
+  list.push({y:P.y,f:function(){drawPlayer(t);}});
+  list.sort(function(a,b){return a.y-b.y;});
+  list.forEach(function(o){o.f();});
+
+  // winter cold tint
+  if(W){g.fillStyle='rgba(150,190,230,0.08)';g.fillRect(0,0,VW,VH);}
+
+  var da=darknessAlpha();
+  if(da>0.01){
+    lg.clearRect(0,0,VW,VH);
+    lg.globalCompositeOperation='source-over';
+    lg.fillStyle='rgba(8,10,30,'+da+')';
+    lg.fillRect(0,0,VW,VH);
+    lg.globalCompositeOperation='destination-out';
+    fires.forEach(function(f,i){
+      if(f.fuel<=0)return;
+      var r=(45+f.fuel*0.9+(f.pit?12:0))*(1+0.05*Math.sin(t/70+i*3));
+      cutLight(f.x-camX,f.y-camY,r);
+    });
+    var h=held();
+    if(h&&h.id==='torch')cutLight(P.x-camX,P.y-camY,55*(1+0.06*Math.sin(t/80)));
+    if(phase()===1)cutLight(P.x-camX,P.y-camY,26);
+    g.drawImage(lightCv,0,0);
+  }
+  // snowfall
+  if(W){
+    g.fillStyle='rgba(240,246,252,0.8)';
+    snow.forEach(function(s){
+      var sx2=(s.x+Math.sin(t/900+s.p)*20)%VW, sy2=(s.y+t*0.02*s.s)%VH;
+      if(sx2<0)sx2+=VW;
+      g.fillRect(sx2,sy2,s.s>0.8?2:1,s.s>0.8?2:1);
+    });
+  }
+  if(P.san<40){
+    var sa=(40-P.san)/40;
+    g.fillStyle='rgba(80,40,110,'+(sa*0.22)+')';
+    g.fillRect(0,0,VW,VH);
+    g.globalAlpha=sa*0.5;
+    g.strokeStyle='#2a1040';g.lineWidth=14;
+    g.strokeRect(-4,-4,VW+8,VH+8);
+    g.globalAlpha=1;
+  }
+  if(winterNow()&&P.temp<35){
+    g.fillStyle='rgba(120,170,220,'+((35-P.temp)/35*0.18)+')';
+    g.fillRect(0,0,VW,VH);
+  }
+  if(P.hurtT>0){g.fillStyle='rgba(200,50,50,'+(P.hurtT*0.5)+')';g.fillRect(0,0,VW,VH);}
+  if(darkT>0.8){
+    g.fillStyle='#f0a0a0';g.font='11px "Microsoft YaHei"';g.textAlign='center';
+    if(Math.floor(t/300)%2)g.fillText('黑暗里有什么东西在动……',VW/2,VH/2-30);
+    g.textAlign='left';
+  }
+  floats.forEach(function(fl){
+    g.globalAlpha=clamp(1.3-fl.t,0,1);
+    g.fillStyle=fl.c;g.font='10px "Microsoft YaHei"';g.textAlign='center';
+    g.fillText(fl.txt,fl.x-camX,fl.y-camY);
+    g.globalAlpha=1;g.textAlign='left';
+  });
+}
+function cutLight(cx,cy,r){
+  var grd=lg.createRadialGradient(cx,cy,r*0.25,cx,cy,r);
+  grd.addColorStop(0,'rgba(0,0,0,1)');
+  grd.addColorStop(0.75,'rgba(0,0,0,0.85)');
+  grd.addColorStop(1,'rgba(0,0,0,0)');
+  lg.fillStyle=grd;
+  lg.beginPath();lg.arc(cx,cy,r,0,7);lg.fill();
+}
+
+/* ---- entity sprites ---- */
+function drawEnt(e,t){
+  var x=eCX(e)-camX, y=eCY(e)-camY;
+  var W=winterNow();
+  var shake=(e.shakeT&&e.shakeT>0)?Math.round(Math.sin(t/20)*1.5):0;
+  x+=shake;
+  switch(e.k){
+    case 'tree':
+      g.globalAlpha=.22;disc(g,x,y+8,7,'#000');g.globalAlpha=1;
+      R(g,x-2,y-4,5,13,'#6b4a35');R(g,x-2,y-4,2,13,'#5a3c2e');
+      var sw=Math.round(Math.sin(t/900+e.tx)*1);
+      if(e.v===0){
+        disc(g,x+sw,y-14,9,W?'#3d5a44':'#2e6b3a');
+        disc(g,x-5+sw,y-10,5,W?'#4a6b52':'#3f8a4c');disc(g,x+5+sw,y-12,5,W?'#4a6b52':'#3f8a4c');
+        if(W){R(g,x-6+sw,y-20,13,3,'#e6edf4');R(g,x-3+sw,y-16,5,2,'#e6edf4');}
+        else{R(g,x-2+sw,y-19,2,2,'#57a862');R(g,x+4+sw,y-13,2,2,'#57a862');}
+      } else {
+        R(g,x-8+sw,y-8,17,5,W?'#3d5a44':'#2e6b3a');R(g,x-6+sw,y-13,13,5,W?'#44634c':'#356e3f');
+        R(g,x-4+sw,y-18,9,5,W?'#4a6b52':'#3f8a4c');R(g,x-2+sw,y-22,5,4,W?'#4a6b52':'#3f8a4c');
+        if(W){R(g,x-4+sw,y-19,9,2,'#e6edf4');R(g,x-8+sw,y-9,17,2,'#e6edf4');}
+      }
+      break;
+    case 'stump':
+      disc(g,x,y+1,5,'#6b4a35');R(g,x-3,y-1,7,3,'#93684f');R(g,x-1,y-1,2,1,'#6b4a35');
+      if(W)R(g,x-3,y-2,7,1,'#e6edf4');
+      break;
+    case 'rock':
+      g.globalAlpha=.2;disc(g,x,y+4,7,'#000');g.globalAlpha=1;
+      disc(g,x,y,7,'#6f6f7c');disc(g,x+4,y+2,4,'#8a8f9c');
+      R(g,x-3,y-4,3,2,'#9aa0ad');
+      if(W)R(g,x-5,y-5,10,2,'#e6edf4');
+      if(e.hp<3)R(g,x-2,y-1,5,1,'#4a4a58');
+      break;
+    case 'bush':
+      g.globalAlpha=.2;disc(g,x,y+4,7,'#000');g.globalAlpha=1;
+      disc(g,x,y,7,W?'#5a7060':'#2e6b3a');disc(g,x-3,y-2,4,W?'#6d8272':'#3f8a4c');
+      if(W){R(g,x-5,y-4,10,2,'#e6edf4');R(g,x-2,y-6,5,2,'#e6edf4');}
+      else if(e.grown){
+        R(g,x-4,y-2,2,2,'#c73e33');R(g,x+1,y-4,2,2,'#c73e33');
+        R(g,x+3,y+1,2,2,'#c73e33');R(g,x-1,y+2,2,2,'#e05545');
+      }
+      break;
+    case 'grass':
+      if(W){R(g,x-4,y,8,3,'#dfe6ee');R(g,x-2,y-3,4,3,'#cbd6e2');}
+      else if(e.grown){
+        for(var i=0;i<4;i++){
+          var gx=x-5+i*3, gh=5+((i*7)%3);
+          R(g,gx,y+3-gh,1,gh,'#7cb35a');
+        }
+        R(g,x-2,y-4,1,6,'#93c46a');
+      } else R(g,x-3,y+1,6,2,'#5a8a48');
+      break;
+    case 'twig':
+      R(g,x-4,y,8,2,'#6b4a35');R(g,x+1,y-2,2,3,'#6b4a35');break;
+    case 'flint':
+      R(g,x-3,y-1,5,3,'#4a4a58');R(g,x-1,y-3,3,3,'#5d5d6e');break;
+    case 'stone_g':
+      disc(g,x,y,3,'#8a8f9c');R(g,x-1,y-2,2,1,'#9aa0ad');break;
+    case 'carrot':
+      R(g,x-3,y-5,1,4,'#4f8a3d');R(g,x,y-6,1,5,'#4f8a3d');R(g,x+3,y-5,1,4,'#4f8a3d');
+      R(g,x-2,y-1,5,3,'#e0782a');break;
+    case 'flower':
+      R(g,x,y-4,1,6,'#4f8a3d');
+      R(g,x-2,y-6,2,2,'#e08ab8');R(g,x+1,y-6,2,2,'#e08ab8');
+      R(g,x-2,y-3,2,2,'#e08ab8');R(g,x+1,y-3,2,2,'#e08ab8');
+      R(g,x,y-5,1,2,'#f2d18b');break;
+    case 'den':
+      g.globalAlpha=.22;disc(g,x,y+5,8,'#000');g.globalAlpha=1;
+      disc(g,x,y,8,'#cfc4dd');disc(g,x-3,y-3,4,'#e0d8ea');
+      R(g,x-4,y+2,3,2,'#8a7a9e');R(g,x+2,y-1,3,2,'#8a7a9e');
+      R(g,x-1,y+3,3,3,'#3d2d4d');
+      if(phase()===2){R(g,x-1,y+4,1,1,'#e05545');R(g,x+1,y+4,1,1,'#e05545');}
+      break;
+    case 'wall':
+      R(g,x-9,y-8,18,14,'#7d7d8c');
+      R(g,x-9,y-8,18,2,'#9aa0ad');
+      R(g,x-9,y-2,18,1,'#5d5d6e');R(g,x-2,y-8,1,6,'#5d5d6e');R(g,x-6,y-2,1,8,'#5d5d6e');R(g,x+4,y-2,1,8,'#5d5d6e');
+      if(e.hp<10){R(g,x-4,y-6,1,4,'#3a3a44');R(g,x+2,y,1,4,'#3a3a44');}
+      break;
+    case 'farm':
+      R(g,x-9,y-7,18,15,'#5a4030');
+      R(g,x-8,y-6,16,13,'#6e4e38');
+      R(g,x-8,y-3,16,1,'#5a4030');R(g,x-8,y+1,16,1,'#5a4030');R(g,x-8,y+5,16,1,'#5a4030');
+      if(e.st===1){
+        R(g,x-5,y-4,1,3,'#7cb35a');R(g,x,y,1,3,'#7cb35a');R(g,x+4,y-4,1,3,'#7cb35a');
+        if(W)R(g,x-8,y-6,16,2,'#dfe6ee');
+      } else if(e.st===2){
+        R(g,x-5,y-6,2,5,'#4f8a3d');R(g,x-6,y-4,4,2,'#e0782a');
+        R(g,x+3,y-6,2,5,'#4f8a3d');disc(g,x+4,y-2,2,'#c73e33');
+        R(g,x-1,y-5,1,5,'#4f8a3d');
+        g.globalAlpha=.5+.5*Math.abs(Math.sin(t/400));
+        R(g,x+7,y-8,1,1,'#f2d18b');g.globalAlpha=1;
+      }
+      break;
+  }
+}
+function drawDrop(d,t){
+  var x=d.x-camX,y=d.y-camY+Math.round(Math.sin(t/300+d.x)*1.5);
+  g.globalAlpha=.2;disc(g,x,d.y-camY+4,4,'#000');g.globalAlpha=1;
+  miniIcon(g,d.item,x,y);
+}
+function miniIcon(g,id,x,y){
+  switch(id){
+    case 'meat':R(g,x-3,y-3,6,5,'#d97080');R(g,x+2,y,3,2,'#e8e2d0');break;
+    case 'meatC':R(g,x-3,y-3,6,5,'#8a5030');R(g,x+2,y,3,2,'#e8e2d0');break;
+    case 'wood':R(g,x-4,y-2,8,4,'#8a5f43');R(g,x-4,y-2,8,1,'#a8764f');break;
+    case 'silk':disc(g,x,y,3,'#e8e2d0');R(g,x-1,y-1,1,1,'#b9b29c');R(g,x+1,y+1,1,1,'#b9b29c');break;
+    default:R(g,x-3,y-3,6,6,'#c9b98a');
+  }
+}
+function drawFire(f,t){
+  var x=f.x-camX,y=f.y-camY;
+  if(f.pit){
+    R(g,x-9,y-1,4,4,'#6f6f7c');R(g,x+6,y-1,4,4,'#6f6f7c');
+    R(g,x-6,y+3,4,3,'#8a8f9c');R(g,x+2,y+3,4,3,'#8a8f9c');
+    R(g,x-4,y-4,3,3,'#6f6f7c');R(g,x+2,y-4,3,3,'#6f6f7c');
+    R(g,x-5,y,10,3,'#3a3a44');
+  } else {
+    R(g,x-7,y+1,3,3,'#6f6f7c');R(g,x+5,y+1,3,3,'#6f6f7c');R(g,x-1,y+4,3,2,'#6f6f7c');
+  }
+  R(g,x-5,y-1,10,3,'#6b4a35');R(g,x-3,y-3,6,3,'#5a3c2e');
+  if(f.fuel>0){
+    var fr=Math.floor(t/110)%3;
+    var hh=5+Math.round(f.fuel/25)+fr;
+    R(g,x-4,y-2-hh*0.6,8,hh*0.6+2,'#e07b2a');
+    R(g,x-2,y-4-hh,5,hh,'#f2c14b');
+    R(g,x-1,y-3-hh*0.5,2,2,'#fdf3c9');
+    if(fr===1)R(g,x+2,y-8-hh,1,1,'#f2c14b');
+    if(fr===2)R(g,x-3,y-10-hh,1,1,'#e07b2a');
+  } else {
+    R(g,x-2,y-4,4,3,'#3a3a44');
+    if(Math.floor(t/400)%2)R(g,x,y-7,1,2,'#8a8f9c');
+  }
+}
+function drawMob(m,t){
+  var x=m.x-camX,y=m.y-camY;
+  if(m.k==='spider'){
+    g.globalAlpha=.25;disc(g,x,y+4,6,'#000');g.globalAlpha=1;
+    var lp=Math.floor(t/120)%2;
+    for(var i=0;i<3;i++){
+      var ly=y-1+i*2, off=(i%2===lp)?1:0;
+      R(g,x-8-off,ly,3,1,'#1f1830');R(g,x+5+off,ly,3,1,'#1f1830');
+    }
+    disc(g,x,y,5,m.hurtT>0?'#6a4a7a':'#2d2136');
+    disc(g,x,y-3,3,'#3d2d4d');
+    R(g,x-2,y-4,1,1,'#e05545');R(g,x+1,y-4,1,1,'#e05545');
+  } else if(m.k==='hound'){
+    g.globalAlpha=.25;disc(g,x,y+5,7,'#000');g.globalAlpha=1;
+    var run=Math.floor(t/90)%2;
+    R(g,x-7+run,y+3,3,4,'#4a2a20');R(g,x+4-run,y+3,3,4,'#4a2a20');
+    R(g,x-8,y-4,16,8,m.hurtT>0?'#a06a5a':'#6e3a2e');
+    R(g,x-8,y-1,16,3,'#5a2d22');
+    R(g,x+5,y-8,8,7,'#6e3a2e');
+    R(g,x+6,y-11,3,4,'#4a2a20');R(g,x+10,y-11,3,4,'#4a2a20');
+    R(g,x+8,y-6,2,2,'#e05545');
+    R(g,x+11,y-3,3,2,'#e8e2d0');
+    R(g,x-11,y-5+run,4,2,'#5a2d22');
+  } else {
+    var wob=Math.sin(t/150);
+    g.globalAlpha=.72;
+    for(var j=0;j<5;j++){
+      var sx=x-6+j*3, sh=10+Math.round(Math.sin(t/180+j)*3);
+      R(g,sx,y-sh,3,sh+4,'#1a1030');
+    }
+    disc(g,x,y-10+wob*2,6,'#1a1030');
+    g.globalAlpha=1;
+    R(g,x-3,y-11,2,1,'#e8e2d0');R(g,x+2,y-11,2,1,'#e8e2d0');
+  }
+}
+function drawPlayer(t){
+  var x=P.x-camX,y=P.y-camY;
+  var bob=P.moving?(Math.floor(t/140)%2):0;
+  g.globalAlpha=.25;disc(g,x,y+7,5,'#000');g.globalAlpha=1;
+  y-=bob;
+  var lo=P.moving?(Math.floor(t/140)%2?1:-1):0;
+  R(g,x-4,y+2+(lo>0?1:0),3,5,'#4a3a5c');
+  R(g,x+1,y+2+(lo<0?1:0),3,5,'#4a3a5c');
+  R(g,x-5,y-6,10,9,P.hurtT>0?'#c98a6a':'#8a6a4a');
+  R(g,x-5,y-1,10,1,'#5f4630');
+  R(g,x-5,y-6,3,6,'#7a5c3e');
+  R(g,x-4,y-14,8,8,'#e8b98a');
+  R(g,x-4,y-14,8,3,'#4a3226');
+  if(P.dir===3)R(g,x-4,y-11,2,4,'#4a3226');
+  if(P.dir===1)R(g,x+2,y-11,2,4,'#4a3226');
+  if(P.dir!==0){
+    var ex1=P.dir===3?x-3:(P.dir===1?x:x-3);
+    var ex2=P.dir===3?x:(P.dir===1?x+2:x+1);
+    R(g,ex1,y-10,1,2,'#1a1410');R(g,ex2,y-10,1,2,'#1a1410');
+  }
+  // shiver in cold
+  if(winterNow()&&P.temp<25&&Math.floor(t/90)%2)x+=1;
+  var h=held();
+  if(h){
+    var hx=P.dir===3?x-8:x+6, hy=y-4;
+    drawHeld(g,h.id,hx,hy,t);
+  }
+  if(P.swingT>0){
+    g.globalAlpha=1-P.swingT/0.28;
+    g.strokeStyle='#e8e2d0';g.lineWidth=1.5;
+    g.beginPath();g.arc(x,y-4,13,-0.6+P.swingT*6,0.6+P.swingT*6);g.stroke();
+    g.globalAlpha=1;
+  }
+}
+function drawHeld(g,id,x,y,t){
+  switch(id){
+    case 'axe':R(g,x,y-6,2,8,'#8a5f43');R(g,x-2,y-8,5,3,'#9aa0ad');break;
+    case 'pickaxe':R(g,x,y-6,2,8,'#8a5f43');R(g,x-3,y-7,8,2,'#9aa0ad');break;
+    case 'spear':R(g,x,y-9,2,12,'#8a5f43');R(g,x,y-11,2,3,'#c9cdd6');break;
+    case 'torch':
+      R(g,x,y-5,2,7,'#8a5f43');
+      var fr=Math.floor(t/100)%2;
+      R(g,x-1,y-9+fr,4,4-fr,'#e07b2a');R(g,x,y-10+fr,2,2,'#f2c14b');break;
+    case 'campfire':case 'firepit':R(g,x-2,y-4,6,3,'#6b4a35');R(g,x-1,y-7,4,3,'#e07b2a');break;
+    case 'wall':R(g,x-2,y-7,6,8,'#7d7d8c');R(g,x-2,y-7,6,2,'#9aa0ad');break;
+    case 'farm':R(g,x-3,y-5,7,6,'#6e4e38');break;
+    default:miniIcon(g,id,x+1,y-3);
+  }
+}
+
+/* ---- item icons (UI) ---- */
+function drawItemIcon(ig,id){
+  ig.clearRect(0,0,24,24);
+  switch(id){
+    case 'wood':R(ig,3,8,18,5,'#8a5f43');R(ig,3,8,18,2,'#a8764f');R(ig,5,14,14,4,'#7a5340');break;
+    case 'twig':R(ig,5,14,14,2,'#6b4a35');R(ig,12,9,2,6,'#6b4a35');R(ig,15,6,2,4,'#6b4a35');break;
+    case 'grass':for(var i=0;i<5;i++)R(ig,5+i*3,19-(5+(i*5)%5),2,5+(i*5)%5,'#7cb35a');break;
+    case 'flint':R(ig,7,10,10,7,'#4a4a58');R(ig,10,6,6,6,'#5d5d6e');R(ig,9,8,2,2,'#7d7d8c');break;
+    case 'stone':disc(ig,12,13,6,'#6f6f7c');R(ig,8,9,4,2,'#9aa0ad');break;
+    case 'silk':disc(ig,12,12,6,'#e8e2d0');R(ig,8,10,8,1,'#b9b29c');R(ig,10,8,1,8,'#b9b29c');R(ig,14,9,1,6,'#b9b29c');break;
+    case 'seed':R(ig,8,10,3,4,'#c9a05a');R(ig,13,8,3,4,'#c9a05a');R(ig,11,14,3,4,'#b3873f');break;
+    case 'berries':disc(ig,9,11,4,'#c73e33');disc(ig,15,13,4,'#e05545');disc(ig,11,17,3,'#c73e33');R(ig,8,9,2,2,'#f0a0a0');break;
+    case 'berriesC':disc(ig,9,11,4,'#8a3028');disc(ig,15,13,4,'#a03a30');disc(ig,11,17,3,'#8a3028');R(ig,8,6,2,3,'#b9b29c');break;
+    case 'carrot':R(ig,8,4,2,5,'#4f8a3d');R(ig,12,3,2,6,'#4f8a3d');R(ig,15,5,2,4,'#4f8a3d');R(ig,9,9,7,4,'#e0782a');R(ig,10,13,5,4,'#d0641f');R(ig,11,17,3,3,'#c05518');break;
+    case 'meat':R(ig,5,8,11,9,'#d97080');R(ig,7,10,4,3,'#e8a0ac');R(ig,16,11,5,4,'#e8e2d0');break;
+    case 'meatC':R(ig,5,8,11,9,'#8a5030');R(ig,7,10,4,3,'#a86a44');R(ig,16,11,5,4,'#e8e2d0');break;
+    case 'bandage':R(ig,5,9,14,7,'#e0d5b8');R(ig,10,7,4,11,'#e0d5b8');R(ig,11,11,2,3,'#c73e33');R(ig,9,12,6,1,'#c73e33');break;
+    case 'axe':R(ig,11,7,3,13,'#8a5f43');R(ig,7,4,9,5,'#9aa0ad');R(ig,7,4,9,2,'#c9cdd6');break;
+    case 'pickaxe':R(ig,11,7,3,13,'#8a5f43');R(ig,5,5,15,3,'#9aa0ad');R(ig,5,5,3,5,'#9aa0ad');R(ig,17,5,3,5,'#9aa0ad');break;
+    case 'spear':R(ig,11,7,2,14,'#8a5f43');R(ig,10,2,4,6,'#c9cdd6');break;
+    case 'torch':R(ig,11,10,3,11,'#8a5f43');R(ig,9,4,7,7,'#e07b2a');R(ig,11,6,3,4,'#f2c14b');break;
+    case 'campfire':R(ig,5,16,14,3,'#6b4a35');R(ig,8,10,8,6,'#e07b2a');R(ig,10,6,4,6,'#f2c14b');break;
+    case 'firepit':R(ig,3,15,5,4,'#6f6f7c');R(ig,16,15,5,4,'#6f6f7c');R(ig,8,17,8,3,'#8a8f9c');R(ig,9,9,6,7,'#e07b2a');R(ig,10,5,4,6,'#f2c14b');break;
+    case 'wall':R(ig,4,6,16,13,'#7d7d8c');R(ig,4,6,16,3,'#9aa0ad');R(ig,4,12,16,1,'#5d5d6e');R(ig,11,6,1,6,'#5d5d6e');R(ig,7,12,1,7,'#5d5d6e');R(ig,15,12,1,7,'#5d5d6e');break;
+    case 'farm':R(ig,4,7,16,12,'#6e4e38');R(ig,4,10,16,1,'#5a4030');R(ig,4,14,16,1,'#5a4030');R(ig,8,4,1,4,'#7cb35a');R(ig,14,4,1,4,'#7cb35a');break;
+    case 'backpack':R(ig,6,8,12,11,'#8a6a4a');R(ig,6,8,12,3,'#6e5238');R(ig,10,12,4,4,'#5f4630');R(ig,8,5,8,4,'#7a5c3e');break;
+  }
+}
+
+/* ============ UI ============ */
+var invDirty=true;
+var invEl=document.getElementById('inv'), slotEls=[];
+function buildInv(){
+  invEl.innerHTML='';slotEls=[];
+  for(var i=0;i<12;i++){
+    (function(i){
+      var d=document.createElement('div');d.className='slot';
+      var c=document.createElement('canvas');c.width=24;c.height=24;
+      var n=document.createElement('span');n.className='n';
+      var k=document.createElement('span');k.className='key';k.textContent=i<8?(i+1):'';
+      var dur=document.createElement('div');dur.className='dur';dur.style.display='none';
+      var di=document.createElement('i');dur.appendChild(di);
+      d.appendChild(c);d.appendChild(n);d.appendChild(k);d.appendChild(dur);
+      d.addEventListener('click',function(){P.slot=i;renderInv();});
+      d.addEventListener('contextmenu',function(ev){ev.preventDefault();eatSlot(i);});
+      invEl.appendChild(d);
+      slotEls.push({d:d,c:c.getContext('2d'),n:n,dur:dur,di:di});
+    })(i);
+  }
+}
+function renderInv(){
+  invDirty=false;
+  for(var i=0;i<12;i++){
+    var s=P.inv[i],el=slotEls[i];
+    el.d.style.display=i<P.slotsMax?'block':'none';
+    el.d.classList.toggle('sel',P.slot===i);
+    el.c.clearRect(0,0,24,24);
+    if(s){
+      drawItemIcon(el.c,s.id);
+      el.n.textContent=(ITEMS[s.id].tool)?'':s.n;
+      if(ITEMS[s.id].tool){
+        el.dur.style.display='block';
+        el.di.style.width=clamp(s.dur/ITEMS[s.id].dur*100,0,100)+'%';
+      } else el.dur.style.display='none';
+    } else {el.n.textContent='';el.dur.style.display='none';}
+  }
+  renderCraft();
+}
+
+var hudEl=document.getElementById('hud'), bars={};
+function buildHUD(){
+  var defs=[['hp','#d05050',drawHeart],['hun','#e0a33a',drawFood],['san','#8a7fd6',drawBrain],['temp','#7fb2d6',drawSnowI]];
+  hudEl.innerHTML='';
+  defs.forEach(function(df){
+    var m=document.createElement('div');m.className='meter';
+    var c=document.createElement('canvas');c.width=22;c.height=22;
+    df[2](c.getContext('2d'));
+    var bb=document.createElement('div');bb.className='barbox';
+    var b=document.createElement('div');b.className='bar';b.style.background=df[1];
+    bb.appendChild(b);m.appendChild(c);m.appendChild(bb);hudEl.appendChild(m);
+    bars[df[0]]={bar:b,row:m};
+  });
+}
+function drawHeart(ig){disc(ig,8,9,4,'#d05050');disc(ig,14,9,4,'#d05050');R(ig,5,11,13,3,'#d05050');R(ig,7,14,9,3,'#d05050');R(ig,9,17,5,2,'#d05050');R(ig,6,7,2,2,'#f0a0a0');}
+function drawFood(ig){R(ig,5,6,10,9,'#d97080');R(ig,7,8,4,3,'#e8a0ac');R(ig,15,9,5,4,'#e8e2d0');}
+function drawBrain(ig){disc(ig,11,11,6,'#8a7fd6');R(ig,7,8,3,2,'#a89ee8');R(ig,12,7,3,2,'#a89ee8');R(ig,8,12,3,2,'#a89ee8');R(ig,13,12,3,2,'#a89ee8');R(ig,11,5,1,13,'#6f63b8');}
+function drawSnowI(ig){R(ig,10,4,2,15,'#7fb2d6');R(ig,4,10,15,2,'#7fb2d6');R(ig,6,6,2,2,'#7fb2d6');R(ig,15,15,2,2,'#7fb2d6');R(ig,15,6,2,2,'#7fb2d6');R(ig,6,15,2,2,'#7fb2d6');R(ig,10,10,3,3,'#bcd8ec');}
+function updateHUD(){
+  bars.hp.bar.style.width=P.hp+'%';
+  bars.hun.bar.style.width=P.hun+'%';
+  bars.san.bar.style.width=P.san+'%';
+  bars.temp.bar.style.width=P.temp+'%';
+  bars.temp.row.style.opacity=winterNow()?1:0.35;
+  document.getElementById('dayN').textContent=dayN;
+  document.getElementById('seasonN').textContent=winterNow()?'❄ ':'';
+  document.getElementById('phaseN').textContent=phaseName();
+  document.getElementById('phaseN').style.color=['#f2d18b','#e0913a','#8a7fd6'][phase()];
+  document.getElementById('dayfill').style.width=(timeSec%CYCLE)/CYCLE*100+'%';
+}
+
+var craftEl=document.getElementById('craft'), recEls=[];
+function buildCraft(){
+  var box=document.getElementById('recipes');box.innerHTML='';recEls=[];
+  RECIPES.forEach(function(r){
+    var d=document.createElement('div');d.className='recipe';
+    var c=document.createElement('canvas');c.width=24;c.height=24;
+    drawItemIcon(c.getContext('2d'),r.special==='expand'?'backpack':r.id);
+    var info=document.createElement('div');info.className='info';
+    var nm=document.createElement('div');nm.className='nm';
+    nm.textContent=(r.special==='expand'?'背包':ITEMS[r.id].nm)+' · '+r.desc;
+    var cost=document.createElement('div');cost.className='cost';
+    var b=document.createElement('button');b.textContent='合成';
+    b.addEventListener('click',function(){doCraft(r);});
+    info.appendChild(nm);info.appendChild(cost);
+    d.appendChild(c);d.appendChild(info);d.appendChild(b);
+    box.appendChild(d);
+    recEls.push({r:r,cost:cost,b:b});
+  });
+}
+function renderCraft(){
+  recEls.forEach(function(o){
+    var html=[],ok=true;
+    for(var k in o.r.cost){
+      var have=invCount(k),need=o.r.cost[k],good=have>=need;
+      if(!good)ok=false;
+      html.push('<span class="'+(good?'ok':'no')+'">'+ITEMS[k].nm+' '+have+'/'+need+'</span>');
+    }
+    o.cost.innerHTML=html.join(' ');
+    if(o.r.special==='expand'&&P&&P.slotsMax>=12){ok=false;o.b.textContent='已扩';}
+    o.b.disabled=!ok;
+  });
+}
+document.getElementById('craftBtn').addEventListener('click',function(){
+  craftEl.classList.toggle('open');renderCraft();
+});
+var sndBtn=document.getElementById('sndBtn');
+function renderSnd(){sndBtn.textContent=muted?'✕':'♪';}
+function toggleMute(){
+  muted=!muted;
+  try{localStorage.setItem('wildnight-muted',muted?'1':'0');}catch(e){}
+  renderSnd();
+}
+sndBtn.addEventListener('click',toggleMute);
+renderSnd();
+
+/* ---- help overlay ---- */
+var helpOv=document.getElementById('helpOv');
+function openHelp(){helpOpen=true;helpOv.classList.remove('hidden');}
+function closeHelp(){helpOpen=false;helpOv.classList.add('hidden');}
+function toggleHelp(){if(helpOpen)closeHelp();else openHelp();}
+document.getElementById('helpBtn').addEventListener('click',toggleHelp);
+document.getElementById('helpClose').addEventListener('click',closeHelp);
+document.getElementById('btnHelpTitle').addEventListener('click',openHelp);
+(function(){
+  var tabs=document.getElementById('helpTabs');
+  var btns=tabs?tabs.getElementsByTagName('button'):[];
+  for(var i=0;i<btns.length;i++){
+    (function(b){
+      b.addEventListener('click',function(){
+        for(var j=0;j<btns.length;j++)btns[j].classList.remove('on');
+        b.classList.add('on');
+        ['h1','h2','h3','h4','h5'].forEach(function(id){
+          var el=document.getElementById(id);
+          el.classList.toggle('on', id===b.getAttribute('data-t'));
+        });
+      });
+    })(btns[i]);
+  }
+})();
+function drawFoeIcons(){
+  function ctx(id){var c=document.getElementById(id);return c&&c.getContext?c.getContext('2d'):null;}
+  var g1=ctx('foe1');
+  if(g1){ // spider
+    for(var i=0;i<3;i++){R(g1,3,10+i*3,4,1,'#5d4a72');R(g1,21,10+i*3,4,1,'#5d4a72');}
+    disc(g1,14,14,6,'#2d2136');disc(g1,14,9,4,'#3d2d4d');
+    R(g1,12,8,2,2,'#e05545');R(g1,16,8,2,2,'#e05545');
+  }
+  var g2=ctx('foe2');
+  if(g2){ // hound
+    R(g2,3,12,16,8,'#6e3a2e');R(g2,3,17,16,3,'#5a2d22');
+    R(g2,17,7,8,8,'#6e3a2e');R(g2,18,4,3,4,'#4a2a20');R(g2,22,4,3,4,'#4a2a20');
+    R(g2,20,9,2,2,'#e05545');R(g2,24,12,3,2,'#e8e2d0');
+    R(g2,4,20,3,4,'#4a2a20');R(g2,14,20,3,4,'#4a2a20');
+  }
+  var g3=ctx('foe3');
+  if(g3){ // shadow
+    g3.globalAlpha=.8;
+    for(var j=0;j<5;j++){R(g3,6+j*3,8+((j%2)*3),3,14,'#1a1030');}
+    disc(g3,13,8,5,'#1a1030');g3.globalAlpha=1;
+    R(g3,10,7,2,1,'#e8e2d0');R(g3,15,7,2,1,'#e8e2d0');
+  }
+  var g4=ctx('foe4');
+  if(g4){ // darkness
+    R(g4,0,0,28,28,'#08081a');
+    R(g4,8,12,3,2,'#e05545');R(g4,17,12,3,2,'#e05545');
+    R(g4,7,20,14,1,'#2a2a44');
+  }
+  var g5=ctx('foe5');
+  if(g5){ // den
+    disc(g5,14,16,9,'#cfc4dd');disc(g5,10,12,5,'#e0d8ea');
+    R(g5,9,18,4,2,'#8a7a9e');R(g5,17,14,4,2,'#8a7a9e');
+    R(g5,12,20,4,4,'#3d2d4d');
+  }
+}
+drawFoeIcons();
+document.getElementById('qskip').addEventListener('click',function(){
+  tutStep=-1;renderQuest();
+  toast('已跳过新手指引（按 H 随时查看生存手册）');
+});
+
+/* ============ input ============ */
+var keys={};
+window.addEventListener('keydown',function(e){
+  if(e.repeat)return;
+  var k=e.key.length===1?e.key.toLowerCase():e.key;
+  keys[k]=true;
+  if(['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].indexOf(k)>=0)e.preventDefault();
+  if(k>='1'&&k<='8'){var si=parseInt(k,10)-1;if(si<P.slotsMax){P.slot=si;renderInv();}}
+  if(k==='c'){craftEl.classList.toggle('open');renderCraft();}
+  if(k==='e')eatSlot(P.slot);
+  if(k==='m')toggleMute();
+  if(k==='h')toggleHelp();
+  if(k==='Escape'&&helpOpen)closeHelp();
+  if(k===' '&&started&&!dead&&!paused){
+    var bm=null,bd=1e9;
+    mobs.forEach(function(m){var d=dist(P.x,P.y,m.x,m.y);if(d<40&&d<bd){bd=d;bm=m;}});
+    if(bm)attackMob(bm);else P.swingT=0.001;
+  }
+  if(k==='p'&&started&&!dead){
+    paused=!paused;
+    document.getElementById('pauseOv').classList.toggle('hidden',!paused);
+    if(paused)saveGame();
+  }
+});
+window.addEventListener('keyup',function(e){
+  var k=e.key.length===1?e.key.toLowerCase():e.key;
+  keys[k]=false;
+});
+window.addEventListener('blur',function(){
+  keys={};
+  if(started&&!dead&&!paused){paused=true;document.getElementById('pauseOv').classList.remove('hidden');saveGame();}
+});
+window.addEventListener('pagehide',function(){saveGame();});
+document.addEventListener('visibilitychange',function(){if(document.hidden)saveGame();});
+cv.addEventListener('mousedown',function(e){
+  if(!started||dead||paused)return;
+  if(e.button!==0)return;
+  var rect=cv.getBoundingClientRect();
+  var mx=(e.clientX-rect.left)/rect.width*VW+camX;
+  var my=(e.clientY-rect.top)/rect.height*VH+camY;
+  clickWorld(mx,my);
+});
+cv.addEventListener('contextmenu',function(e){e.preventDefault();});
+
+/* ============ boot ============ */
+function hideOverlays(){
+  document.getElementById('titleOv').classList.add('hidden');
+  document.getElementById('deathOv').classList.add('hidden');
+  document.getElementById('pauseOv').classList.add('hidden');
+  closeHelp();
+}
+function startGame(){
+  genWorld((Math.random()*1e9)|0);
+  renderInv();renderCraft();updateHUD();
+  hideOverlays();
+  paused=false;started=true;saveAcc=0;
+  try{ac().resume();}catch(e){}
+  toast('第 1 天。跟着左侧的新手指引走');
+  renderQuest();
+  saveGame();
+}
+function continueGame(){
+  if(!loadGame()){toast('存档损坏，开新档','warn');startGame();return;}
+  renderInv();renderCraft();updateHUD();
+  hideOverlays();
+  paused=false;started=true;dead=false;saveAcc=0;
+  try{ac().resume();}catch(e){}
+  toast('回到荒野 · 第 '+dayN+' 天'+(winterNow()?' · ❄ 寒冬':''));
+  renderQuest();
+}
+document.getElementById('btnStart').addEventListener('click',function(){
+  if(hasSave()&&!confirm('开新档会覆盖已有的冒险存档，确定？'))return;
+  clearSave();startGame();
+});
+document.getElementById('btnRetry').addEventListener('click',startGame);
+document.getElementById('btnCont').addEventListener('click',continueGame);
+document.getElementById('bestLine').textContent=best>0?('最佳纪录：存活 '+best+' 天'):'尚无生还记录';
+if(hasSave())document.getElementById('btnCont').classList.remove('hidden');
+
+buildInv();buildHUD();buildCraft();
+genWorld(12345);
+renderInv();
+
+var lastT=0;
+function loop(t){
+  var dt=Math.min((t-lastT)/1000,0.05);lastT=t;
+  update(dt);
+  render(t);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+})();
+</script>
