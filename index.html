@@ -6,7 +6,7 @@
 <title>阿猪游戏厅 · Pixel Arcade</title>
 <style>
   :root{
-    --night:#14162a; --bone:#e8e2d0; --bone-dim:#b9b29c;
+    --night:#14162a; --night2:#1b1e36; --bone:#e8e2d0; --bone-dim:#b9b29c;
     --pink:#f2b8c6; --gold:#f2d18b; --ink:#0d0b16;
   }
   *{box-sizing:border-box;}
@@ -16,75 +16,207 @@
     background-image:radial-gradient(rgba(242,184,198,0.06) 1px,transparent 1px);
     background-size:9px 9px;min-height:100vh;
   }
-  #page{max-width:720px;margin:0 auto;padding:44px 16px 60px;}
-  header{text-align:center;margin-bottom:34px;}
-  .eyebrow{font-family:Consolas,monospace;font-size:11px;letter-spacing:5px;color:var(--gold);text-transform:uppercase;}
-  h1{font-family:"Noto Serif SC","SimSun",serif;font-size:38px;font-weight:900;
-    margin:8px 0 0;letter-spacing:10px;text-indent:10px;text-shadow:0 3px 0 rgba(0,0,0,.45);}
+  #page{max-width:760px;margin:0 auto;padding:40px 16px 60px;}
+
+  header{text-align:center;margin-bottom:36px;}
+  #heroPig{width:112px;height:112px;image-rendering:pixelated;
+    filter:drop-shadow(4px 5px 0 rgba(0,0,0,.45));}
+  .eyebrow{font-family:Consolas,monospace;font-size:11px;letter-spacing:5px;
+    color:var(--gold);text-transform:uppercase;margin-top:10px;}
+  h1{font-family:"Noto Serif SC","SimSun",serif;font-size:40px;font-weight:900;
+    margin:6px 0 0;letter-spacing:11px;text-indent:11px;text-shadow:0 3px 0 rgba(0,0,0,.45);}
   .tag{margin-top:12px;font-size:13px;color:var(--bone-dim);letter-spacing:1px;
     font-family:"Noto Serif SC","SimSun",serif;}
-  .games{display:flex;flex-direction:column;gap:18px;}
+
+  .games{display:flex;flex-direction:column;gap:22px;}
   a.card{
-    display:flex;gap:16px;align-items:center;text-decoration:none;color:var(--bone);
-    background:rgba(13,11,22,.7);border:3px solid var(--bone);
-    box-shadow:5px 6px 0 rgba(0,0,0,.5);padding:16px 18px;
+    display:flex;gap:0;text-decoration:none;color:var(--bone);
+    background:rgba(13,11,22,.75);border:3px solid var(--bone);
+    box-shadow:6px 7px 0 rgba(0,0,0,.5);overflow:hidden;
     transition:transform .08s;
   }
-  a.card:hover{transform:translate(-2px,-2px);box-shadow:7px 8px 0 rgba(0,0,0,.5);border-color:var(--pink);}
+  a.card:hover{transform:translate(-2px,-2px);box-shadow:8px 9px 0 rgba(0,0,0,.5);border-color:var(--pink);}
   a.card:active{transform:translate(2px,2px);box-shadow:2px 3px 0 rgba(0,0,0,.5);}
-  .emo{font-size:38px;flex:none;width:56px;text-align:center;filter:drop-shadow(2px 2px 0 rgba(0,0,0,.4));}
-  .info h2{margin:0 0 4px;font-size:18px;letter-spacing:3px;font-family:"Noto Serif SC","SimSun",serif;}
+  .cover{flex:none;width:192px;position:relative;border-right:3px solid var(--bone);}
+  .cover canvas{display:block;width:100%;height:100%;image-rendering:pixelated;object-fit:cover;}
+  .ver{position:absolute;top:6px;left:6px;font-family:Consolas,monospace;font-size:10px;
+    background:var(--ink);color:var(--gold);border:1px solid var(--gold);padding:1px 6px;letter-spacing:1px;}
+  .info{padding:14px 16px;display:flex;flex-direction:column;justify-content:center;min-width:0;}
+  .info h2{margin:0 0 5px;font-size:19px;letter-spacing:3px;font-family:"Noto Serif SC","SimSun",serif;}
   .info p{margin:0;font-size:12.5px;color:var(--bone-dim);line-height:1.7;}
-  .badge{display:inline-block;margin-top:6px;font-size:10.5px;letter-spacing:1px;
-    border:1px solid var(--gold);color:var(--gold);padding:1px 7px;margin-right:5px;}
+  .badges{margin-top:8px;display:flex;flex-wrap:wrap;gap:5px;}
+  .badge{font-size:10.5px;letter-spacing:1px;border:1px solid var(--gold);color:var(--gold);padding:1px 7px;}
   .badge.pink{border-color:var(--pink);color:var(--pink);}
-  footer{margin-top:44px;text-align:center;font-family:Consolas,monospace;
-    font-size:10px;letter-spacing:2px;color:rgba(232,226,208,.4);line-height:2;}
-  @media (max-width:520px){
+  .play{margin-top:10px;font-size:12px;color:var(--pink);letter-spacing:2px;font-weight:bold;}
+
+  #logs{margin-top:46px;}
+  #logs h3{font-size:16px;letter-spacing:4px;font-family:"Noto Serif SC","SimSun",serif;
+    border-bottom:2px solid rgba(232,226,208,.25);padding-bottom:8px;}
+  details{margin:10px 0;background:rgba(13,11,22,.6);border:2px solid rgba(232,226,208,.3);}
+  summary{cursor:pointer;padding:9px 14px;font-size:13.5px;letter-spacing:1px;
+    font-family:"Noto Serif SC","SimSun",serif;list-style:none;}
+  summary::before{content:"▸ ";color:var(--gold);}
+  details[open] summary::before{content:"▾ ";}
+  summary:hover{color:var(--pink);}
+  .log{padding:2px 18px 12px;font-size:12px;color:var(--bone-dim);line-height:1.9;}
+  .log b{color:var(--gold);font-weight:normal;font-family:Consolas,monospace;}
+
+  footer{margin-top:46px;text-align:center;font-family:Consolas,monospace;
+    font-size:10px;letter-spacing:2px;color:rgba(232,226,208,.4);line-height:2.1;}
+
+  @media (max-width:560px){
     h1{font-size:28px;letter-spacing:6px;}
-    #page{padding-top:28px;}
+    #page{padding-top:26px;}
+    a.card{flex-direction:column;}
+    .cover{width:100%;height:130px;border-right:none;border-bottom:3px solid var(--bone);}
   }
 </style>
 </head>
 <body>
 <div id="page">
   <header>
+    <canvas id="heroPig" width="40" height="40"></canvas>
     <div class="eyebrow">Pixel Arcade · hand-crafted with Claude</div>
     <h1>阿猪游戏厅</h1>
-    <div class="tag">三个像素游戏 · 无需下载 · 点开即玩</div>
+    <div class="tag">无需下载 · 点开即玩 · 进度存在你自己的浏览器里</div>
   </header>
 
   <div class="games">
     <a class="card" href="azhu.html">
-      <div class="emo">🐷</div>
+      <div class="cover"><canvas id="cv1" width="96" height="60"></canvas><span class="ver">v3.0</span></div>
       <div class="info">
-        <h2>阿猪大冒险</h2>
-        <p>马里奥式闯关。从深圳一路跳到月球，踩鸭子、钻水管、打黑魔仙，帮阿猪抢回被窝。</p>
-        <span class="badge pink">手机可玩</span><span class="badge">电脑可玩</span><span class="badge">六大关卡</span>
+        <h2>🐷 阿猪大冒险</h2>
+        <p>马里奥式横版闯关。从深圳一路跳到月球，骑上阿狗吐火球，把被窝从黑魔仙王文丹手里抢回来。</p>
+        <div class="badges">
+          <span class="badge pink">手机可玩</span><span class="badge">六大城市关卡</span>
+          <span class="badge">坐骑系统</span><span class="badge">难度自定义</span>
+        </div>
+        <div class="play">▶ 开始游戏</div>
       </div>
     </a>
     <a class="card" href="wild-night.html">
-      <div class="emo">🔥</div>
+      <div class="cover"><canvas id="cv2" width="96" height="60"></canvas><span class="ver">v2.1</span></div>
       <div class="info">
-        <h2>荒夜求生</h2>
-        <p>饥荒式生存。采集合成、熬过黑夜、扛住寒冬和猎犬，看你能在荒岛上活几天。</p>
-        <span class="badge">需要键盘鼠标</span><span class="badge">自动存档</span>
+        <h2>🔥 荒夜求生</h2>
+        <p>饥荒式生存。白天采集合成，夜晚守着火光，扛过寒冬、猎犬和自己的理智，看你能活几天。</p>
+        <div class="badges">
+          <span class="badge">需要键盘鼠标</span><span class="badge">自动存档</span><span class="badge">死亡即删档</span>
+        </div>
+        <div class="play">▶ 开始游戏</div>
       </div>
     </a>
     <a class="card" href="central.html">
-      <div class="emo">📉</div>
+      <div class="cover"><canvas id="cv3" width="96" height="60"></canvas><span class="ver">v1.0</span></div>
       <div class="info">
-        <h2>中环求生</h2>
-        <p>金融人版生存游戏。被困在空无一人的中环，靠咖啡、台灯和彭博终端熬过熊市与夺命连环call。</p>
-        <span class="badge">需要键盘鼠标</span><span class="badge">轻度玩梗</span>
+        <h2>📉 中环求生</h2>
+        <p>金融人版生存游戏。被困在空无一人的中环，靠咖啡、应急台灯和彭博终端，熬过熊市与夺命连环call。</p>
+        <div class="badges">
+          <span class="badge">需要键盘鼠标</span><span class="badge">轻度玩梗</span><span class="badge">香港中环</span>
+        </div>
+        <div class="play">▶ 开始游戏</div>
       </div>
     </a>
   </div>
 
+  <section id="logs">
+    <h3>更 新 日 志</h3>
+    <details open>
+      <summary>阿猪大冒险</summary>
+      <div class="log">
+        <b>v3.0</b> — 坐骑阿狗（吐火球、拦截魔法弹）；游戏设置（生命数 / 无限命 / 敌人数量与速度 / Boss 血量）；死亡后可直接重玩本关<br>
+        <b>v2.1</b> — 手机触屏虚拟按键<br>
+        <b>v2.0</b> — 深圳 / 胡志明市 / 武汉 / 上海 / 广州五城关卡 + 月球 Boss 战；蜗牛壳、水管密室、奶茶 / 泡泡糖 / 金菠萝道具；更多阿猪贴纸动画<br>
+        <b>v1.0</b> — 首发：三关、踩鸭子、曲奇与菠萝包
+      </div>
+    </details>
+    <details>
+      <summary>荒夜求生</summary>
+      <div class="log">
+        <b>v2.1</b> — 新手任务指引 + 随时可调出的生存手册（H 键）<br>
+        <b>v2.0</b> — 寒冬季节与体温、猎犬袭击波、种田、蜘蛛巢、石墙 / 石火坑 / 背包 / 绷带、自动存档续玩<br>
+        <b>v1.0</b> — 首发：昼夜循环、三围生存、采集合成
+      </div>
+    </details>
+    <details>
+      <summary>中环求生</summary>
+      <div class="log">
+        <b>v1.0</b> — 首发：荒夜求生的金融主题改编——熊市即寒冬，终端即火堆，维港流动性冻结可步行
+      </div>
+    </details>
+  </section>
+
   <footer>
     MADE FOR FUN · 像素画与音效均为程序生成 · 无广告 无追踪 无服务器<br>
-    进度保存在你自己的浏览器里
+    一个金融打工人和 Claude 的副业作品 · 2026
   </footer>
 </div>
+
+<script>
+(function(){
+function R(g,x,y,w,h,c){g.fillStyle=c;g.fillRect(x,y,w,h);}
+function disc(g,cx,cy,r,c){for(var y=-r;y<=r;y++){var w=Math.floor(Math.sqrt(r*r-y*y));R(g,cx-w,cy+y,2*w+1,1,c);}}
+var OUT='#9c5f6d',BODY='#f9d9e0',SNOUT='#f0aebe',NOS='#a86070',EYE='#3a2a30',BLUSH='#f4c2ce';
+
+// hero pig (front view)
+var tp=document.getElementById('heroPig').getContext('2d');
+R(tp,6,12,28,24,OUT);R(tp,8,14,24,20,BODY);
+R(tp,8,6,7,8,OUT);R(tp,10,8,4,5,BODY);
+R(tp,25,6,7,8,OUT);R(tp,26,8,4,5,BODY);
+R(tp,13,20,3,4,EYE);R(tp,24,20,3,4,EYE);
+R(tp,15,25,10,7,OUT);R(tp,16,26,8,5,SNOUT);
+R(tp,18,28,1,2,NOS);R(tp,21,28,1,2,NOS);
+R(tp,9,27,3,2,BLUSH);R(tp,28,27,3,2,BLUSH);
+R(tp,12,36,5,3,OUT);R(tp,13,37,3,2,BODY);
+R(tp,23,36,5,3,OUT);R(tp,24,37,3,2,BODY);
+
+// cover 1: azhu platformer — day scene
+var g1=document.getElementById('cv1').getContext('2d');
+R(g1,0,0,96,60,'#9ad4ec');
+R(g1,8,8,20,6,'#ffffff');R(g1,12,5,12,5,'#ffffff');
+R(g1,62,6,14,5,'#ffffff');
+R(g1,0,46,96,14,'#7cc35a');R(g1,0,50,96,10,'#b9855c');
+R(g1,58,26,10,10,'#f2c14b');R(g1,58,26,10,2,'#f8dc8a');R(g1,58,34,10,2,'#a8752c');
+g1.fillStyle='#7a4a1f';g1.font='bold 8px monospace';g1.fillText('?',61,34);
+R(g1,78,34,14,12,'#4a9c5a');R(g1,76,30,18,5,'#63b873');
+R(g1,20,34,12,8,OUT);R(g1,21,35,10,6,BODY);
+R(g1,22,32,3,3,OUT);R(g1,27,32,3,3,OUT);
+R(g1,28,36,4,4,OUT);R(g1,29,37,3,2,SNOUT);
+R(g1,26,36,2,2,EYE);
+R(g1,22,42,3,3,OUT);R(g1,27,42,3,3,OUT);
+R(g1,6,38,9,5,'#8a6a4a');R(g1,7,39,7,3,'#f5ead8');R(g1,13,35,4,4,'#8a6a4a');
+disc(g1,40,38,2,'#e07b2a');R(g1,36,38,3,1,'#f2c14b');
+disc(g1,48,20,3,'#d9a95c');
+
+// cover 2: wild night — campfire in dark
+var g2=document.getElementById('cv2').getContext('2d');
+R(g2,0,0,96,60,'#0d1030');
+for(var i=0;i<14;i++)R(g2,(i*29)%96,(i*13)%28,1,1,'#cdd6ff');
+disc(g2,78,10,6,'#f4e7c5');
+R(g2,0,48,96,12,'#2a2016');
+R(g2,8,30,4,18,'#0a0817');disc(g2,10,26,7,'#0f1422');
+R(g2,86,32,4,16,'#0a0817');disc(g2,88,28,6,'#0f1422');
+g2.globalAlpha=.25;disc(g2,48,44,20,'#ffd98a');g2.globalAlpha=.15;disc(g2,48,44,30,'#ffd98a');g2.globalAlpha=1;
+R(g2,42,46,12,3,'#6b4a35');
+R(g2,45,38,6,8,'#e07b2a');R(g2,46,34,4,6,'#f2c14b');R(g2,47,40,2,2,'#fdf3c9');
+R(g2,26,38,8,8,'#8a6a4a');R(g2,27,32,6,6,'#e8b98a');R(g2,27,32,6,2,'#4a3226');
+R(g2,27,46,2,3,'#4a3a5c');R(g2,31,46,2,3,'#4a3a5c');
+
+// cover 3: central — office night terminal
+var g3=document.getElementById('cv3').getContext('2d');
+R(g3,0,0,96,60,'#171b38');
+for(var j=0;j<10;j++)R(g3,(j*31)%96,(j*17)%20,1,1,'#cdd6ff');
+R(g3,66,14,10,30,'#12152e');R(g3,80,20,12,24,'#12152e');
+R(g3,68,18,2,3,'#f2d18b');R(g3,72,26,2,3,'#f2d18b');R(g3,83,24,2,3,'#f2d18b');R(g3,87,32,2,3,'#f2d18b');
+R(g3,0,44,96,16,'#4e5d7a');
+R(g3,16,40,30,4,'#5d6472');
+R(g3,20,24,20,16,'#2b2f38');R(g3,22,26,16,12,'#153a5e');
+R(g3,24,34,3,1,'#7cd68a');R(g3,28,31,3,1,'#7cd68a');R(g3,32,28,3,1,'#7cd68a');
+g3.globalAlpha=.18;disc(g3,30,32,16,'#7fb2d6');g3.globalAlpha=1;
+R(g3,52,32,8,8,'#e8e2d0');R(g3,55,32,2,4,'#b3543f');
+R(g3,53,26,6,6,'#e8b98a');R(g3,53,26,6,2,'#2b2419');
+R(g3,53,40,2,3,'#2b2f3d');R(g3,57,40,2,3,'#2b2f3d');
+R(g3,64,36,4,4,'#e8e2d0');R(g3,65,34,1,2,'#c9cdd6');
+})();
+</script>
 </body>
 </html>
