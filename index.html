@@ -94,6 +94,18 @@
         <div class="play">▶ 开始游戏</div>
       </div>
     </a>
+    <a class="card" href="honey-quest.html">
+      <div class="cover"><canvas id="cv4" width="96" height="60"></canvas><span class="ver">v1.0</span></div>
+      <div class="info">
+        <h2>🍯 阿猪与阿狗 · 蜜糖远征</h2>
+        <p>俯视角双人动作！近战阿猪+火球阿狗穿越零食王国，讨伐偷光蜂蜜的维尼。支持两人联机 / 同屏合作，内置猪狗 PVP 对决。</p>
+        <div class="badges">
+          <span class="badge pink">双人联机</span><span class="badge pink">手机可玩</span>
+          <span class="badge">五大地区</span><span class="badge">PVP对决</span>
+        </div>
+        <div class="play">▶ 开始游戏</div>
+      </div>
+    </a>
     <a class="card" href="wild-night.html">
       <div class="cover"><canvas id="cv2" width="96" height="60"></canvas><span class="ver">v2.1</span></div>
       <div class="info">
@@ -127,6 +139,12 @@
         <b>v2.1</b> — 手机触屏虚拟按键<br>
         <b>v2.0</b> — 深圳 / 胡志明市 / 武汉 / 上海 / 广州五城关卡 + 月球 Boss 战；蜗牛壳、水管密室、奶茶 / 泡泡糖 / 金菠萝道具；更多阿猪贴纸动画<br>
         <b>v1.0</b> — 首发：三关、踩鸭子、曲奇与菠萝包
+      </div>
+    </details>
+    <details>
+      <summary>阿猪与阿狗 · 蜜糖远征</summary>
+      <div class="log">
+        <b>v1.0</b> — 首发：俯视角双人合作战役（泡泡糖草原 / 荧光蘑菇林 / 饼干大峡谷 / 汽水沼泽 / 蜂巢宫殿）；WebRTC 房间码联机 + 同屏双人；六种零食怪 + 蜜糖大盗维尼 Boss 战；倒地救援；猪狗 PVP 五局三胜
       </div>
     </details>
     <details>
@@ -216,6 +234,23 @@ R(g3,52,32,8,8,'#e8e2d0');R(g3,55,32,2,4,'#b3543f');
 R(g3,53,26,6,6,'#e8b98a');R(g3,53,26,6,2,'#2b2419');
 R(g3,53,40,2,3,'#2b2f3d');R(g3,57,40,2,3,'#2b2f3d');
 R(g3,64,36,4,4,'#e8e2d0');R(g3,65,34,1,2,'#c9cdd6');
+
+// cover 4: honey quest — candy meadow battle
+var g4=document.getElementById('cv4').getContext('2d');
+R(g4,0,0,96,22,'#ffd9e8');
+disc(g4,20,22,14,'#f2a0c0');disc(g4,70,24,18,'#f2a0c0');
+R(g4,0,22,96,38,'#f7cfe0');
+R(g4,10,14,2,12,'#f5f0e6');disc(g4,11,12,6,'#e05a7a');disc(g4,11,12,3,'#fdf3f6');
+disc(g4,78,38,9,'#f2b83a');disc(g4,78,27,6,'#f2b83a');
+disc(g4,73,23,2,'#f2b83a');disc(g4,83,23,2,'#f2b83a');
+R(g4,84,36,7,6,'#8a5f43');R(g4,85,34,5,2,'#a8764f');
+R(g4,24,36,10,7,OUT);R(g4,25,37,8,5,BODY);
+R(g4,32,34,4,4,OUT);R(g4,33,35,3,2,SNOUT);
+g4.strokeStyle='#fdf3c9';g4.lineWidth=2;
+g4.beginPath();g4.arc(30,38,12,-0.9,0.5);g4.stroke();
+R(g4,44,46,10,5,'#8a6a4a');R(g4,45,47,8,3,'#f5ead8');R(g4,52,42,5,5,'#8a6a4a');
+disc(g4,62,44,2,'#e07b2a');disc(g4,68,42,2,'#e07b2a');R(g4,58,44,3,1,'#f2c14b');
+R(g4,68,14,20,3,'#2a2436');R(g4,68,14,13,3,'#e06a5a');
 })();
 </script>
 </body>
