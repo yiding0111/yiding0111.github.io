@@ -126,14 +126,12 @@
       </div>
       <div class="btns">
         <button class="gbtn" id="mSolo">单 人 出 征</button>
-        <button class="gbtn" id="mLocal">同 屏 双 人</button>
       </div>
       <div class="btns">
         <button id="mHost">联机 · 创建房间</button>
         <button id="mJoin">联机 · 加入房间</button>
       </div>
       <div class="btns">
-        <button class="pbtn" id="mPvp">猪狗对决 (同屏PVP)</button>
         <button class="pbtn" id="mPvpNet">猪狗对决 (联机PVP)</button>
       </div>
       <div class="btns"><button id="mHelp">玩法说明</button></div>
@@ -185,9 +183,9 @@
       <h2 style="font-size:20px;letter-spacing:4px;">玩 法 说 明</h2>
       <div class="sub" style="text-align:left">
         <b>目标</b>：横向推进，清光每一波怪解锁道路，穿越五个地区，讨伐蜜糖大盗维尼。<br><br>
-        <b>单人 / 房主 / 同屏P1</b>：WASD 移动 · <b>F</b> 攻击 · <b>G</b> 冲刺<br>
-        <b>同屏P2</b>：方向键移动 · <b>K</b> 攻击 · <b>L</b> 冲刺<br>
+        <b>操作</b>：WASD / 方向键移动 · <b>F</b> 攻击 · <b>G</b> 冲刺<br>
         手机：左侧摇杆 + 右侧攻击/冲刺（自动瞄准最近的怪）<br><br>
+        <b>武器箱</b>：每个地区第二道防线清光后出现 🐷/🐕 专属武器箱，走上去即换装（跨地区保留）。精英怪也可能掉落。<br><br>
         <b>阿猪</b>：挥砍范围伤害+击退；冲刺带无敌帧，用来贴脸和躲技能。<br>
         <b>阿狗</b>：火球连发；巧克力龟的壳会减免火球伤害——那是阿猪的活。<br><br>
         <b>倒地</b>：血量归零会倒地流血倒计时；队友靠近站 2.5 秒即可扶起。全员倒地=远征失败。<br>
@@ -384,6 +382,26 @@ var HERO={
   pig:{name:'阿猪',hp:120,spd:92,atkCd:0.38,dmg:13,range:30,arc:1.7},
   dog:{name:'阿狗',hp:80,spd:112,atkCd:0.30,dmg:6,pspd:215}
 };
+var PIG_W=[
+  {nm:'木勺',dmg:13,range:30,arc:1.7,kb:1},
+  {nm:'棒棒糖锤',dmg:18,range:34,arc:1.85,kb:1.25},
+  {nm:'薄荷大剑',dmg:24,range:40,arc:2.05,kb:1.45},
+  {nm:'蜂刺巨剑',dmg:31,range:46,arc:2.25,kb:1.7}
+];
+var DOG_W=[
+  {nm:'火星吐息',dmg:6,cd:0.30,n:1,spd:1},
+  {nm:'辣椒火球',dmg:9,cd:0.28,n:1,spd:1.15},
+  {nm:'双管汽水炮',dmg:8,cd:0.32,n:2,spd:1.1},
+  {nm:'彩虹糖机枪',dmg:7,cd:0.16,n:1,spd:1.25}
+];
+var TIERC=['#fdf3c9','#f2a0b8','#8ae0c9','#f2d18b'];
+function pigW(p){return PIG_W[clamp((p.tier||1),1,4)-1];}
+function dogW(p){return DOG_W[clamp((p.tier||1),1,4)-1];}
+function effCd(p){
+  if(p.hero==='dog'&&mode==='coop')return dogW(p).cd;
+  return p.atkCdBase;
+}
+function wpnName(hero,tier){return (hero==='pig'?PIG_W:DOG_W)[clamp(tier,1,4)-1].nm;}
 var PVPST={
   pig:{hp:140,dmg:16,spd:96},
   dog:{hp:100,dmg:7,spd:118,atkCd:0.34}
@@ -391,7 +409,7 @@ var PVPST={
 function mkPlayer(idx,hero,x,y){
   var base=HERO[hero],hp=base.hp,spd=base.spd,dmg=base.dmg,atkCd=base.atkCd;
   if(mode==='pvp'){var o=PVPST[hero];hp=o.hp;dmg=o.dmg;spd=o.spd;if(o.atkCd)atkCd=o.atkCd;}
-  return {idx:idx,hero:hero,x:x,y:y,dir:0,fx:1,hp:hp,maxHp:hp,spd:spd,dmg:dmg,
+  return {idx:idx,hero:hero,x:x,y:y,dir:0,fx:1,hp:hp,maxHp:hp,spd:spd,dmg:dmg,tier:1,
     atkCdBase:atkCd,atkCd:0,dashCd:0,dashT:0,inv:0,swingT:0,
     downed:false,bleed:0,revP:0,animT:0,moving:false,
     atkHeld:false,dashHeld:false,kx:0,ky:0};
@@ -435,7 +453,10 @@ var MON={
 };
 function mkMon(type,x,y){
   var d=MON[type];
-  return {id:monSeq++,type:type,x:x,y:y,hp:d.hp,maxHp:d.hp,r:d.r,
+  var hm=mode==='coop'?(1+stageIdx*0.35):1;
+  var dm=mode==='coop'?(1+stageIdx*0.18):1;
+  var hp=Math.round(d.hp*hm);
+  return {id:monSeq++,type:type,x:x,y:y,hp:hp,maxHp:hp,r:d.r,dmg:Math.round(d.dmg*dm),
     st:'chase',t:Math.random()*2,hitT:0,barT:0,dmgCd:0,kx:0,ky:0,
     dashX:0,dashY:0,castT:1+Math.random()*1.5,ph:Math.random()*7};
 }
@@ -470,7 +491,12 @@ function killMon(m){
     for(var k=0;k<3;k++)mons.push(mkMon('gummy',m.x+(k-1)*14,m.y+6));
   }
   var rnd=Math.random();
-  if(rnd<0.18)drops.push({x:m.x,y:m.y,kind:'honey',t:0});
+  if(m.type==='gummyKing'&&rnd<0.5){
+    var hero=players[Math.floor(Math.random()*players.length)].hero;
+    drops.push({x:m.x,y:m.y,kind:hero==='pig'?'wpig':'wdog',t:0});
+    sfx.bell();toast('⚔ 精英掉落了武器箱！');
+  }
+  else if(rnd<0.18)drops.push({x:m.x,y:m.y,kind:'honey',t:0});
   else if(rnd<0.30)drops.push({x:m.x,y:m.y,kind:'cookie',t:0});
 }
 function monCol(t){
@@ -490,7 +516,7 @@ function updateMons(dt){
         m.castT=2.2;
         var a=angTo(m.x,m.y,tg.p.x,tg.p.y);
         projs.push({x:m.x,y:m.y-6,vx:Math.cos(a)*105,vy:Math.sin(a)*105,
-          t:0,life:2.2,dmg:9,kind:'frost',owner:-1});
+          t:0,life:2.2,dmg:Math.round(9*(1+stageIdx*0.18)),kind:'frost',owner:-1});
         sfx.fire();
       }
     } else if(d.dasher){ // snake
@@ -521,8 +547,8 @@ function updateMons(dt){
     m.y=clamp(m.y,Y0-4,Y1+4);
     m.x=clamp(m.x,10,mapW-10);
     // contact damage
-    if(tg&&d.dmg>0&&m.dmgCd<=0&&dist(m.x,m.y,tg.p.x,tg.p.y)<m.r+9){
-      hurtP(tg.p,d.dmg);m.dmgCd=0.85;
+    if(tg&&m.dmg>0&&m.dmgCd<=0&&dist(m.x,m.y,tg.p.x,tg.p.y)<m.r+9){
+      hurtP(tg.p,m.dmg);m.dmgCd=0.85;
     }
   }
 }
@@ -609,7 +635,7 @@ function updatePlayers(dt){
     p.y=clamp(pu.y,Y0,Y1);
     // attack
     if(c.atk&&p.atkCd<=0){
-      p.atkCd=p.atkCdBase;
+      p.atkCd=effCd(p);
       doAttack(p);
     }
     p.atkHeld=c.atk;
@@ -662,20 +688,25 @@ function doAttack(p){
     if(tg)aimD=angTo(p.x,p.y,tg.x!==undefined?tg.x:tg.p.x,tg.y!==undefined?tg.y:tg.p.y);
     p.fx=Math.cos(aimD)>=0?1:-1;
     sfx.fire();
-    var sp=HERO.dog.pspd;
-    var pr={x:p.x+Math.cos(aimD)*10,y:p.y-4+Math.sin(aimD)*10,
-      vx:Math.cos(aimD)*sp,vy:Math.sin(aimD)*sp,t:0,life:1.35,dmg:p.dmg,kind:'fire',owner:p.idx};
-    if(mode==='pvp'||isAuth())projs.push(pr);
-    if(netRole)sendEv({t:'fire',i:p.idx,x:pr.x,y:pr.y,vx:pr.vx,vy:pr.vy});
+    var dw=mode==='coop'?dogW(p):{dmg:p.dmg,n:1,spd:1};
+    var sp=HERO.dog.pspd*dw.spd;
+    for(var sh=0;sh<dw.n;sh++){
+      var aa=aimD+(dw.n>1?(sh-(dw.n-1)/2)*0.2:0);
+      var pr={x:p.x+Math.cos(aa)*10,y:p.y-4+Math.sin(aa)*10,
+        vx:Math.cos(aa)*sp,vy:Math.sin(aa)*sp,t:0,life:1.35,dmg:dw.dmg,kind:'fire',owner:p.idx};
+      if(mode==='pvp'||isAuth())projs.push(pr);
+      if(netRole)sendEv({t:'fire',i:p.idx,x:pr.x,y:pr.y,vx:pr.vx,vy:pr.vy});
+    }
   }
 }
 function normAng(a){while(a>Math.PI)a-=2*Math.PI;while(a<-Math.PI)a+=2*Math.PI;return a;}
 function resolveSlash(p,aimD){
+  var wp=pigW(p);
   if(mode==='pvp'){
     var op=players.find(function(q){return q!==p;});
     if(op&&!op.downed){
       var dd=dist(p.x,p.y,op.x,op.y);
-      if(dd<HERO.pig.range+8&&Math.abs(normAng(angTo(p.x,p.y,op.x,op.y)-aimD))<HERO.pig.arc/2){
+      if(dd<wp.range+8&&Math.abs(normAng(angTo(p.x,p.y,op.x,op.y)-aimD))<wp.arc/2){
         if(!netRole||op.idx===localIdxOf()){
           hurtP(op,p.dmg);
           op.kx+=Math.cos(aimD)*140;op.ky+=Math.sin(aimD)*140;
@@ -685,7 +716,7 @@ function resolveSlash(p,aimD){
     // deflect fireballs
     for(var i=projs.length-1;i>=0;i--){
       var pr=projs[i];
-      if(pr.kind==='fire'&&pr.owner!==p.idx&&dist(p.x,p.y,pr.x,pr.y)<HERO.pig.range+6){
+      if(pr.kind==='fire'&&pr.owner!==p.idx&&dist(p.x,p.y,pr.x,pr.y)<wp.range+6){
         projs.splice(i,1);
         parts.push({x:pr.x,y:pr.y,vx:0,vy:-40,t:0.4,c:'#f2c14b'});
         sfx.hitM();
@@ -696,20 +727,20 @@ function resolveSlash(p,aimD){
   if(!isAuth())return;
   mons.forEach(function(m){
     var dd=dist(p.x,p.y,m.x,m.y);
-    if(dd<HERO.pig.range+m.r&&Math.abs(normAng(angTo(p.x,p.y,m.x,m.y)-aimD))<HERO.pig.arc/2){
-      dmgMon(m,p.dmg,false);
-      m.kx+=Math.cos(aimD)*170;m.ky+=Math.sin(aimD)*170;
+    if(dd<wp.range+m.r&&Math.abs(normAng(angTo(p.x,p.y,m.x,m.y)-aimD))<wp.arc/2){
+      dmgMon(m,wp.dmg,false);
+      m.kx+=Math.cos(aimD)*170*wp.kb;m.ky+=Math.sin(aimD)*170*wp.kb;
     }
   });
   if(boss&&boss.st!=='dead'){
     var db=dist(p.x,p.y,boss.x,boss.y);
-    if(db<HERO.pig.range+16&&Math.abs(normAng(angTo(p.x,p.y,boss.x,boss.y)-aimD))<HERO.pig.arc/2)
-      dmgBoss(p.dmg);
+    if(db<wp.range+16&&Math.abs(normAng(angTo(p.x,p.y,boss.x,boss.y)-aimD))<wp.arc/2)
+      dmgBoss(wp.dmg);
   }
   // deflect frost bolts
   for(var i=projs.length-1;i>=0;i--){
     var pr=projs[i];
-    if(pr.kind==='frost'&&dist(p.x,p.y,pr.x,pr.y)<HERO.pig.range+6){
+    if(pr.kind==='frost'&&dist(p.x,p.y,pr.x,pr.y)<wp.range+6){
       projs.splice(i,1);
       parts.push({x:pr.x,y:pr.y,vx:0,vy:-40,t:0.4,c:'#cfeaf4'});
     }
@@ -754,7 +785,7 @@ function updateProjs(dt){
         puddles.push({x:pr.tx,y:pr.ty,r:26,t:6});
         sfx.splat();
         players.forEach(function(q){
-          if(!q.downed&&dist(pr.tx,pr.ty,q.x,q.y)<28)hurtP(q,10);
+          if(!q.downed&&dist(pr.tx,pr.ty,q.x,q.y)<28)hurtP(q,12);
         });
       }
       projs.splice(i,1);
@@ -766,12 +797,24 @@ function updateProjs(dt){
   }
   for(var d2=drops.length-1;d2>=0;d2--){
     var dr=drops[d2];dr.t+=dt;
-    if(dr.t>20){drops.splice(d2,1);continue;}
+    var isW=dr.kind==='wpig'||dr.kind==='wdog';
+    if(!isW&&dr.t>20){drops.splice(d2,1);continue;}
     for(var pi=0;pi<players.length;pi++){
       var pp=players[pi];
       if(pp.downed)continue;
       if(dist(dr.x,dr.y,pp.x,pp.y)<14){
         if(!isAuth())break;
+        if(isW){
+          if((dr.kind==='wpig')!==(pp.hero==='pig'))continue;
+          var tt=Math.min(4,stageIdx+2);
+          if(pp.tier>=tt){score+=30;floats.push({x:pp.x,y:pp.y-16,txt:'+30',c:'#f2d18b',t:0});}
+          else {
+            pp.tier=tt;
+            toast((pp.hero==='pig'?'🐷':'🐕')+' 武器升级：'+wpnName(pp.hero,tt)+'！');
+            floats.push({x:pp.x,y:pp.y-18,txt:wpnName(pp.hero,tt),c:'#f2d18b',t:0,big:1});
+          }
+          sfx.bell();sfx.pick();drops.splice(d2,1);break;
+        }
         if(dr.kind==='honey'){
           if(pp.hp<pp.maxHp){pp.hp=Math.min(pp.maxHp,pp.hp+15);floats.push({x:pp.x,y:pp.y-16,txt:'+15',c:'#8ae06a',t:0});}
           else score+=5;
@@ -785,7 +828,7 @@ function updateProjs(dt){
 
 /* ================= boss 维尼 ================= */
 function spawnBoss(x,y){
-  var hp=Math.round(520*(players.length>1?1.55:1));
+  var hp=Math.round(640*(players.length>1?1.55:1));
   boss={x:x,y:y,hp:hp,maxHp:hp,st:'enter',t:0,castT:2.5,hitT:0,fx:-1,
     tx:0,ty:0,spinT:0};
   sfx.roar();
@@ -838,7 +881,7 @@ function updateBoss(dt){
       }
     }
     // contact
-    if(tg&&tg.d<22)hurtP(tg.p,14);
+    if(tg&&tg.d<22)hurtP(tg.p,16);
   } else if(boss.st==='throw'){
     if(boss.t>0.5){
       var n=(players.filter(function(q){return !q.downed;}).length)+ (ph>=2?1:0);
@@ -863,7 +906,7 @@ function updateBoss(dt){
     boss.y=clamp(boss.y,Y0,Y1);
     boss.x=clamp(boss.x,20,mapW-20);
     players.forEach(function(q){
-      if(!q.downed&&dist(boss.x,boss.y,q.x,q.y)<24)hurtP(q,16);
+      if(!q.downed&&dist(boss.x,boss.y,q.x,q.y)<24)hurtP(q,18);
     });
     if(boss.t>0.75){boss.st='chase';boss.castT=2.8;}
   } else if(boss.st==='summon'){
@@ -880,7 +923,7 @@ function updateBoss(dt){
       boss.y=clamp(boss.y,Y0,Y1);
     }
     players.forEach(function(q){
-      if(!q.downed&&dist(boss.x,boss.y,q.x,q.y)<28)hurtP(q,12);
+      if(!q.downed&&dist(boss.x,boss.y,q.x,q.y)<28)hurtP(q,14);
     });
     if(boss.spinT<=0){boss.st='chase';boss.castT=3;}
   }
@@ -944,9 +987,12 @@ function loadStage(i){
 function updateZones(){
   if(!isAuth()||mode!=='coop')return;
   var st=STAGES[stageIdx];
-  if(zoneIdx>=st.zones.length)return;
-  var z=st.zones[zoneIdx];
   var frontier=Math.max.apply(null,players.map(function(p){return p.x;}));
+  if(zoneIdx>=st.zones.length){
+    if(frontier>mapW-40&&stageIdx<STAGES.length-1)coopWinStage();
+    return;
+  }
+  var z=st.zones[zoneIdx];
   if(!waveActive&&frontier>z.x-60){
     waveActive=true;
     gateX=z.x+170;
@@ -970,14 +1016,17 @@ function updateZones(){
   if(waveActive&&z.wave!=='BOSS'&&mons.length===0){
     waveActive=false;gateX=1e9;zoneIdx++;
     sfx.wave();toast('道路解锁 →');
+    if(zoneIdx===2&&stageIdx<STAGES.length-1){
+      var wcy=(Y0+Y1)/2;
+      players.forEach(function(pp){
+        drops.push({x:z.x+40,y:wcy+(pp.hero==='pig'?-24:24),kind:pp.hero==='pig'?'wpig':'wdog',t:0});
+      });
+      sfx.bell();toast('⚔ 武器箱出现了！');
+    }
     if(netRole==='host')sendEv({t:'gate'});
     if(zoneIdx>=st.zones.length&&stageIdx<STAGES.length-1){
       // walk to edge to finish stage
     }
-  }
-  // stage end: all zones cleared & reached right edge
-  if(zoneIdx>=st.zones.length&&frontier>mapW-40&&stageIdx<STAGES.length-1){
-    coopWinStage();
   }
 }
 function coopWinStage(){
@@ -1112,7 +1161,15 @@ function render(t){
   // drops
   drops.forEach(function(d){
     var bob=Math.sin(t/250+d.x)*2;
-    if(d.kind==='honey'){
+    if(d.kind==='wpig'||d.kind==='wdog'){
+      var wc=d.kind==='wpig'?'#f2b8c6':'#c9a05a';
+      g.globalAlpha=.35+.2*Math.sin(bob);
+      disc(g,d.x-camX,d.y-4+bob,11,wc);g.globalAlpha=1;
+      R(g,d.x-camX-7,d.y-9+bob,14,11,'#8a5f43');
+      R(g,d.x-camX-7,d.y-9+bob,14,3,'#a8764f');
+      R(g,d.x-camX-2,d.y-9+bob,4,11,wc);
+      R(g,d.x-camX-1,d.y-5+bob,2,2,'#f2d18b');
+    } else if(d.kind==='honey'){
       R(g,d.x-camX-4,d.y-6+bob,8,8,'#c9992e');R(g,d.x-camX-3,d.y-7+bob,6,3,'#e8b83a');
       R(g,d.x-camX-2,d.y-9+bob,4,2,'#8a6a1f');
     } else {
@@ -1182,6 +1239,7 @@ function drawHUD(t){
     R(g,x+20,20,76,3,'#2a2436');
     if(p.dashCd>0)R(g,x+20,20,Math.round(76*clamp(1-p.dashCd/2,0,1)),3,'#7fb2d6');
     else R(g,x+20,20,76,3,'#a8d8e8');
+    for(var ti=0;ti<(p.tier||1);ti++)R(g,x+20+ti*7,24,5,3,TIERC[ti]);
     if(p.downed){
       g.fillStyle='#ff8a7a';g.font='9px "Microsoft YaHei"';
       g.fillText('倒地 '+Math.ceil(p.bleed)+'s',x+20,10);
@@ -1252,7 +1310,7 @@ function drawDogS(x,y,p,t){
   var w=p.moving?(Math.floor(t/110)%2?1:0):0;
   R(g,-6,-1+w,2,3,'#8a6a4a');R(g,2,0-w,2,3,'#8a6a4a');
   // firing mouth flash
-  if(p.atkCd>p.atkCdBase-0.08){R(g,10,-10,3,2,'#e07b2a');R(g,12,-11,2,1,'#f2c14b');}
+  if(p.atkCd>effCd(p)-0.08){R(g,10,-10,3,2,'#e07b2a');R(g,12,-11,2,1,'#f2c14b');}
   g.restore();
 }
 function drawHero(p,t){
@@ -1287,13 +1345,14 @@ function drawHero(p,t){
   // slash arc
   if(p.swingT>0){
     var u=1-p.swingT/0.22;
+    var wr=pigW(p).range;
     g.globalAlpha=.8*(1-u*0.6);
-    g.strokeStyle='#fdf3c9';g.lineWidth=3;
+    g.strokeStyle=TIERC[clamp((p.tier||1),1,4)-1];g.lineWidth=3;
     g.beginPath();
-    g.arc(x,y-4,HERO.pig.range-2,p.dir-0.9+u*1.2,p.dir-0.3+u*1.2);
+    g.arc(x,y-4,wr-2,p.dir-0.9+u*1.2,p.dir-0.3+u*1.2);
     g.stroke();
     g.lineWidth=1;g.strokeStyle='#e8a23a';
-    g.beginPath();g.arc(x,y-4,HERO.pig.range+2,p.dir-0.7+u*1.2,p.dir-0.2+u*1.2);g.stroke();
+    g.beginPath();g.arc(x,y-4,wr+2,p.dir-0.7+u*1.2,p.dir-0.2+u*1.2);g.stroke();
     g.globalAlpha=1;
   }
   // dash trail
@@ -1749,14 +1808,15 @@ function onEv(m){
       var me=players[localIdxOf()];
       if(me&&!me.downed){
         var dd=dist(m.x,m.y,me.x,me.y);
-        if(dd<HERO.pig.range+8&&Math.abs(normAng(angTo(m.x,m.y,me.x,me.y)-m.d))<HERO.pig.arc/2){
+        var wpr=pigW(p);
+        if(dd<wpr.range+8&&Math.abs(normAng(angTo(m.x,m.y,me.x,me.y)-m.d))<wpr.arc/2){
           hurtP(me,p.dmg);
           me.kx+=Math.cos(m.d)*140;me.ky+=Math.sin(m.d)*140;
         }
       }
       for(var i=projs.length-1;i>=0;i--){
         var pr=projs[i];
-        if(pr.kind==='fire'&&pr.owner!==m.i&&dist(m.x,m.y,pr.x,pr.y)<HERO.pig.range+6)projs.splice(i,1);
+        if(pr.kind==='fire'&&pr.owner!==m.i&&dist(m.x,m.y,pr.x,pr.y)<pigW(p).range+6)projs.splice(i,1);
       }
     }
     return;
@@ -1818,7 +1878,7 @@ function onState(m){
     } else if(boss&&boss.st!=='dead')boss=null;
     // host player
     var hp0=players[0];
-    if(hp0){hp0.x=lerp(hp0.x,m.p0[0],0.6);hp0.y=lerp(hp0.y,m.p0[1],0.6);hp0.fx=m.p0[2];hp0.hp=m.p0[3];hp0.downed=m.p0[4];hp0.bleed=m.p0[5];hp0.revP=m.p0[6];hp0.moving=m.p0[7];}
+    if(hp0){hp0.x=lerp(hp0.x,m.p0[0],0.6);hp0.y=lerp(hp0.y,m.p0[1],0.6);hp0.fx=m.p0[2];hp0.hp=m.p0[3];hp0.downed=m.p0[4];hp0.bleed=m.p0[5];hp0.revP=m.p0[6];hp0.moving=m.p0[7];hp0.tier=m.p0[8]||1;}
     // own authoritative hp
     var me=players[1];
     if(me){
@@ -1827,11 +1887,13 @@ function onState(m){
       if(m.p1[1]&&!me.downed){me.downed=true;sfx.down();}
       if(!m.p1[1]&&me.downed){me.downed=false;me.inv=1.5;sfx.revive();}
       me.bleed=m.p1[2];me.revP=m.p1[3];
+      var nt=m.p1[4]||1;
+      if(nt>me.tier){me.tier=nt;sfx.bell();toast((me.hero==='pig'?'🐷':'🐕')+' 武器升级：'+wpnName(me.hero,nt)+'！');}
     }
     // world
     score=m.sc;gateX=m.g;zoneIdx=m.z;waveActive=m.wa;
     puddles=m.pu.map(function(a){return {x:a[0],y:a[1],r:a[2],t:a[3]};});
-    drops=m.dr.map(function(a){return {x:a[0],y:a[1],kind:a[2]?'cookie':'honey',t:0};});
+    drops=m.dr.map(function(a){return {x:a[0],y:a[1],kind:['honey','cookie','wpig','wdog'][a[2]],t:0};});
     // host projectiles (frost/pot; fire also mirrored for visuals)
     projs=m.pj.map(function(a){
       return {kind:['fire','frost','pot'][a[0]],x:a[1],y:a[2],vx:a[3],vy:a[4],t:a[5],life:a[6],dmg:0,owner:a[7],tx:a[8],ty:a[9]};
@@ -1856,11 +1918,11 @@ function netTick(dt){
       var snap={t:'snap',
         m:mons.map(function(mm){return [mm.id,MONK.indexOf(mm.type),Math.round(mm.x),Math.round(mm.y),mm.hp,mm.st];}),
         b:boss?[Math.round(boss.x),Math.round(boss.y),boss.hp,boss.maxHp,boss.st,boss.fx]:null,
-        p0:[Math.round(players[0].x),Math.round(players[0].y),players[0].fx,players[0].hp,players[0].downed,Math.round(players[0].bleed),players[0].revP,players[0].moving],
-        p1:[players[1].hp,players[1].downed,Math.round(players[1].bleed),players[1].revP],
+        p0:[Math.round(players[0].x),Math.round(players[0].y),players[0].fx,players[0].hp,players[0].downed,Math.round(players[0].bleed),players[0].revP,players[0].moving,players[0].tier],
+        p1:[players[1].hp,players[1].downed,Math.round(players[1].bleed),players[1].revP,players[1].tier],
         sc:score,g:gateX>1e8?1e9:Math.round(gateX),z:zoneIdx,wa:waveActive,
         pu:puddles.map(function(u){return [Math.round(u.x),Math.round(u.y),u.r,+u.t.toFixed(1)];}),
-        dr:drops.map(function(d){return [Math.round(d.x),Math.round(d.y),d.kind==='cookie'?1:0];}),
+        dr:drops.map(function(d){return [Math.round(d.x),Math.round(d.y),['honey','cookie','wpig','wdog'].indexOf(d.kind)];}),
         pj:projs.map(function(p){return [['fire','frost','pot'].indexOf(p.kind),Math.round(p.x),Math.round(p.y),Math.round(p.vx),Math.round(p.vy),+p.t.toFixed(2),p.life,p.owner,Math.round(p.tx||0),Math.round(p.ty||0)];})
       };
       sendState(snap);
@@ -1910,13 +1972,6 @@ function startSolo(){
   score=0;loadStage(0);running=true;paused=false;hideAll();
   try{ac().resume();}catch(e){}
 }
-function startLocal2(){
-  mode='coop';local2=true;netRole=null;
-  players=[mkPlayer(0,'pig',50,(Y0+Y1)/2-16),mkPlayer(1,'dog',50,(Y0+Y1)/2+16)];
-  score=0;loadStage(0);running=true;paused=false;hideAll();
-  toast('P1：WASD+F/G　P2：方向键+K/L');
-  try{ac().resume();}catch(e){}
-}
 function startPvpLocal(){
   mode='pvp';local2=true;netRole=null;
   players=[mkPlayerFor('pvp',0,'pig'),mkPlayerFor('pvp',1,'dog')];
@@ -1926,14 +1981,12 @@ function startPvpLocal(){
   try{ac().resume();}catch(e){}
 }
 document.getElementById('mSolo').addEventListener('click',function(){heroPick(startSolo,'单人出征 · 选择英雄');});
-document.getElementById('mLocal').addEventListener('click',startLocal2);
 document.getElementById('mHost').addEventListener('click',function(){
   heroPick(function(){netMode='coop';show('netOv');document.getElementById('netTitle').textContent='联机远征 · 创建房间';hostStart();},'房主 · 选择你的英雄');
 });
 document.getElementById('mJoin').addEventListener('click',function(){
   heroPick(function(){netMode='coop';show('netOv');document.getElementById('netTitle').textContent='联机远征 · 加入房间';joinStart();},'加入 · 选择你的英雄');
 });
-document.getElementById('mPvp').addEventListener('click',startPvpLocal);
 document.getElementById('mPvpNet').addEventListener('click',function(){
   heroPick(function(){
     netMode='pvp';show('netOv');
@@ -2035,7 +2088,9 @@ try{window.__dbg={
   php:function(i){return players[i]?players[i].hp:0;},
   bossHp:function(){return boss?boss.hp:-1;},
   pvpWins:function(){return pvp?pvp.wins.slice():null;},
-  gate:function(){return gateX;}
+  gate:function(){return gateX;},
+  tier:function(i){return players[i]?players[i].tier:0;},
+  startPvp:function(){startPvpLocal();}
 };}catch(e){}
 
 /* ================= boot ================= */
