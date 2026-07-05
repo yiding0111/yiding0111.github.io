@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>星星回家 · 阿猪像素微电影</title>
+<style>
+  :root{
+    --night:#14162a; --bone:#e8e2d0; --bone-dim:#b9b29c;
+    --pink:#f2b8c6; --gold:#f2d18b; --ink:#0d0b16;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--night);}
+  body{
+    color:var(--bone);font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+    background-image:radial-gradient(rgba(242,184,198,0.06) 1px,transparent 1px);
+    background-size:9px 9px;min-height:100vh;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #wrap{max-width:760px;margin:0 auto;padding:26px 12px 40px;}
+  header{text-align:center;margin-bottom:16px;}
+  .eyebrow{font-family:Consolas,monospace;font-size:10px;letter-spacing:4px;color:var(--gold);text-transform:uppercase;}
+  h1{font-family:"Noto Serif SC","SimSun",serif;font-size:26px;font-weight:900;margin:4px 0 0;
+     letter-spacing:8px;text-indent:8px;text-shadow:0 3px 0 rgba(0,0,0,.45);}
+  .tag{margin-top:6px;font-size:12px;color:var(--bone-dim);letter-spacing:1px;}
+
+  #stage{position:relative;border:3px solid var(--bone);box-shadow:6px 7px 0 rgba(0,0,0,.5);
+         background:#050410;overflow:hidden;}
+  #film{display:block;width:100%;image-rendering:pixelated;}
+  #prog{height:4px;background:rgba(232,226,208,.15);}
+  #progFill{height:100%;width:0%;background:var(--pink);}
+
+  .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:10px;background:rgba(9,8,18,.92);text-align:center;padding:16px;z-index:5;}
+  .overlay.hidden{display:none;}
+  .ovEyebrow{font-family:Consolas,monospace;font-size:10px;letter-spacing:5px;color:var(--gold);}
+  .ovTitle{font-family:"Noto Serif SC","SimSun",serif;font-size:30px;font-weight:900;letter-spacing:6px;margin:2px 0;}
+  .ovSub{font-size:12.5px;color:var(--bone-dim);line-height:1.9;}
+  .pbtn{font-family:inherit;background:var(--ink);color:var(--gold);border:2px solid var(--gold);
+    padding:9px 26px;font-size:15px;letter-spacing:4px;cursor:pointer;margin-top:6px;}
+  .pbtn:hover{color:var(--pink);border-color:var(--pink);}
+  .ovNote{font-size:11px;color:var(--bone-dim);}
+  .ovLink{font-size:12px;color:var(--bone-dim);text-decoration:none;letter-spacing:2px;margin-top:4px;}
+  .ovLink:hover{color:var(--pink);}
+
+  #btnRow{display:flex;gap:8px;margin-top:12px;align-items:center;}
+  .cbtn{font-family:Consolas,monospace;background:var(--ink);color:var(--bone);
+    border:2px solid rgba(232,226,208,.55);padding:5px 13px;font-size:13px;cursor:pointer;letter-spacing:1px;}
+  .cbtn:hover{border-color:var(--pink);color:var(--pink);}
+  #backLink{margin-left:auto;font-size:12px;color:var(--bone-dim);text-decoration:none;letter-spacing:2px;}
+  #backLink:hover{color:var(--pink);}
+  footer{margin-top:26px;text-align:center;font-family:Consolas,monospace;font-size:10px;
+    letter-spacing:2px;color:rgba(232,226,208,.4);line-height:2;}
+  @media (max-width:560px){ h1{font-size:20px;letter-spacing:5px;} #wrap{padding-top:16px;} }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <header>
+    <div class="eyebrow">AZHU PICTURES · pixel short film</div>
+    <h1>星 星 回 家</h1>
+    <div class="tag">阿猪与一颗迷路小星星的夜晚 · 约 2 分 30 秒 · 自动放映</div>
+  </header>
+
+  <div id="stage">
+    <canvas id="film" width="320" height="180"></canvas>
+    <div id="prog"><div id="progFill"></div></div>
+
+    <div class="overlay" id="titleOv">
+      <div class="ovEyebrow">AZHU PICTURES PRESENTS</div>
+      <div class="ovTitle">《星星回家》</div>
+      <div class="ovSub">一颗小星星掉进了黑黑的森林，<br>阿猪拎起灯笼，出发送它回家。</div>
+      <button class="pbtn" id="startBtn">▶ 开始放映</button>
+      <div class="ovNote">建议打开声音 🎧 · 全程自动播放</div>
+    </div>
+
+    <div class="overlay hidden" id="endOv">
+      <div class="ovEyebrow">THE END</div>
+      <div class="ovTitle" style="font-size:22px;">剧 终</div>
+      <div class="ovSub">从那天起，总有一颗星星跟着阿猪。</div>
+      <button class="pbtn" id="againBtn">↻ 再看一遍</button>
+      <a class="ovLink" href="index.html">← 回阿猪游戏厅</a>
+    </div>
+  </div>
+
+  <div id="btnRow">
+    <button class="cbtn" id="pauseBtn">⏸ 暂停</button>
+    <button class="cbtn" id="sndBtn">♪</button>
+    <button class="cbtn" id="reBtn">↻ 重放</button>
+    <a id="backLink" href="index.html">← 游戏厅</a>
+  </div>
+
+  <footer>PIXEL FILM · 画面与配乐均为程序生成 · 2026</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+/* ---------- 基础 ---------- */
+var cv=document.getElementById('film'), g=cv.getContext('2d');
+var W=320,H=180;
+var OUT='#9c5f6d',BODY='#f9d9e0',SNOUT='#f0aebe',EYE='#3a2a30',BLUSH='#f4c2ce';
+var GOLD='#f2d18b',WARM='#ffd98a',WARM2='#ffe9a8',BONE='#e8e2d0';
+
+function R(c,x,y,w,h,col){c.fillStyle=col;c.fillRect(x,y,w,h);}
+function disc(c,cx,cy,r,col){c.fillStyle=col;c.beginPath();c.arc(cx,cy,r,0,6.284);c.fill();}
+function glow(c,cx,cy,r,col,a){c.globalAlpha=a;disc(c,cx,cy,r,col);c.globalAlpha=a*.7;disc(c,cx,cy,r*.55,col);c.globalAlpha=1;}
+function star5(c,cx,cy,r,col,rot){
+  c.fillStyle=col;c.beginPath();
+  for(var i=0;i<10;i++){var a=Math.PI*i/5-Math.PI/2+(rot||0),rr=(i%2)?r*.45:r;
+    var X=cx+Math.cos(a)*rr,Y=cy+Math.sin(a)*rr; i?c.lineTo(X,Y):c.moveTo(X,Y);}
+  c.closePath();c.fill();
+}
+function clamp(v,a,b){return v<a?a:(v>b?b:v);}
+function lerp(a,b,p){return a+(b-a)*p;}
+
+/* ---------- 影片状态 ---------- */
+var FILM={t:0,playing:false,started:false,dur:150};
+var SCENE_END=[25,55,90,125,150];
+function sceneIdx(t){for(var i=0;i<5;i++)if(t<SCENE_END[i])return i;return 4;}
+function sceneStart(i){return i===0?0:SCENE_END[i-1];}
+
+/* 字幕 [起,止,文字,颜色] */
+var SUBS=[
+  [2,8,'夜深了，阿猪还坐在屋顶上，数星星。'],
+  [10.5,15,'咦——有一颗星星，掉下来了！'],
+  [17,23.5,'它掉进了远处黑黑的森林里。'],
+  [26.5,33,'阿猪拎起小灯笼，出发了。'],
+  [40,47,'走过田野，走过小桥……'],
+  [57,62,'森林里好黑呀……'],
+  [68,73,'找到你啦，小星星。'],
+  [76,83,'别怕，我送你回家。'],
+  [92,98,'爬到山顶，就离天空最近了。'],
+  [105,110,'回家吧，小星星。'],
+  [112.5,117.5,'——谢谢你，阿猪。','#f2d18b'],
+  [119,124,'那一晚，满天的星星都为它亮了一下。'],
+  [132.5,138.3,'从那天起，总有一颗星星，'],
+  [138.3,143.5,'走到哪儿，都跟着阿猪。']
+];
+
+/* ---------- 音频 ---------- */
+var AC=null,muted=false;
+try{muted=localStorage.getItem('starhome-muted')==='1';}catch(e){}
+function ac(){if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();return AC;}
+function freq(m){return 440*Math.pow(2,(m-69)/12);}
+function pn(f,t0,d,type,v){ /* 绝对时间排一个音 */
+  if(muted)return;
+  try{
+    var a=ac(),o=a.createOscillator(),gn=a.createGain();
+    o.type=type||'square';o.frequency.value=f;
+    gn.gain.setValueAtTime(v||.03,t0);
+    gn.gain.exponentialRampToValueAtTime(.0006,t0+d);
+    o.connect(gn);gn.connect(a.destination);o.start(t0);o.stop(t0+d+.03);
+  }catch(e){}
+}
+function tone(f,d,delay,type,v){if(AC)pn(f,AC.currentTime+(delay||0),d,type,v);}
+function sweep(f0,f1,d,type,v,delay){
+  if(muted||!AC)return;
+  try{
+    var a=AC,o=a.createOscillator(),gn=a.createGain(),t0=a.currentTime+(delay||0);
+    o.type=type||'triangle';
+    o.frequency.setValueAtTime(f0,t0);
+    o.frequency.exponentialRampToValueAtTime(f1,t0+d);
+    gn.gain.setValueAtTime(v||.03,t0);
+    gn.gain.exponentialRampToValueAtTime(.0006,t0+d);
+    o.connect(gn);gn.connect(a.destination);o.start(t0);o.stop(t0+d+.03);
+  }catch(e){}
+}
+/* 每幕配乐：8分音符旋律 + 长音贝斯 */
+var MUS=[
+ {bpm:66,w:'triangle',v:.032,mel:[69,0,72,0,76,0,0,0,74,0,72,0,69,0,0,0,67,0,69,0,72,0,0,0,71,0,0,0,64,0,0,0],bass:[45,41,43,40]},
+ {bpm:104,w:'square',v:.02,mel:[64,0,67,0,69,67,69,72,69,0,67,0,64,0,0,0,62,0,64,0,67,64,62,60,62,0,64,0,0,0,0,0],bass:[48,43,45,43]},
+ {bpm:70,w:'triangle',v:.03,mel:[57,0,0,0,60,0,0,0,59,0,0,0,55,0,0,0,57,0,0,0,62,0,0,0,60,0,59,0,0,0,0,0],bass:[45,41,38,40]},
+ {bpm:92,w:'square',v:.02,mel:[60,0,62,0,64,0,67,0,69,0,67,0,69,0,72,0,71,0,72,0,74,0,76,0,79,0,76,0,72,0,0,0],bass:[48,50,53,55]},
+ {bpm:58,w:'triangle',v:.026,mel:[69,0,72,0,76,0,0,0,74,0,72,0,69,0,0,0,67,0,69,0,72,0,0,0,71,0,0,0,64,0,0,0],bass:[45,41,43,40]}
+];
+var mstep=0,mnext=0,mscene=-1;
+function schedMusic(){
+  if(!AC||muted||!FILM.playing)return;
+  var si=sceneIdx(FILM.t);
+  if(si!==mscene){mscene=si;mstep=0;mnext=AC.currentTime+.08;}
+  var m=MUS[si],stepDur=60/m.bpm/2;
+  while(mnext<AC.currentTime+.4){
+    var note=m.mel[mstep%m.mel.length];
+    if(note)pn(freq(note),mnext,stepDur*.92,m.w,m.v);
+    if(mstep%8===0){
+      var b=m.bass[(mstep>>3)%m.bass.length];
+      pn(freq(b),mnext,stepDur*6.5,'triangle',.034);
+    }
+    mstep++;mnext+=stepDur;
+  }
+}
+/* 音效事件 */
+var EVENTS=[
+ {t:9.5,f:function(){sweep(1100,160,.85,'sawtooth',.022);sweep(1600,240,.7,'triangle',.02,.05);}},          /* 流星划落 */
+ {t:11.5,f:function(){tone(988,.07,0,'square',.05);tone(1319,.1,.08,'square',.04);}},                        /* ! */
+ {t:71,f:function(){tone(659,.08,0,'square',.045);tone(880,.08,.09,'square',.045);tone(1319,.16,.18,'square',.05);}}, /* 捡到星星 */
+ {t:106,f:function(){tone(523,.12,0,'triangle',.04);tone(659,.12,.13,'triangle',.04);tone(784,.2,.26,'triangle',.045);}}, /* 星星飘出 */
+ {t:111,f:function(){sweep(300,1500,1.3,'triangle',.04);tone(1047,.1,.35,'square',.03);tone(1319,.1,.65,'square',.03);tone(1568,.14,.95,'square',.035);}}, /* 飞向天空 */
+ {t:116,f:function(){[523,659,784,1047,1319,1568].forEach(function(f,i){tone(f,.14,i*.07,'square',.045);});tone(2093,.4,.45,'triangle',.04);}} /* 满天星闪 */
+];
+function resetEvents(t){for(var i=0;i<EVENTS.length;i++)EVENTS[i].fired=EVENTS[i].t<t;}
+resetEvents(0);
+
+/* ---------- 背景星空 ---------- */
+var STARS=[];
+for(var i=0;i<70;i++)STARS.push({x:(i*73)%320,y:(i*37)%105,sz:(i%7===0)?2:1,sp:.6+(i%5)*.35,ph:i*1.7});
+function skyStars(c,dim,flash){
+  for(var i=0;i<STARS.length;i++){
+    var s=STARS[i];
+    var a=(.22+.7*(0.5+0.5*Math.sin(FILM.t*s.sp+s.ph)))*dim;
+    if(flash>0)a=clamp(a+flash*(.5+.5*Math.sin(FILM.t*22+s.ph*7)),0,1);
+    c.globalAlpha=a;R(c,s.x,s.y,s.sz,s.sz,'#cdd6ff');
+  }
+  c.globalAlpha=1;
+}
+function moon(c,x,y,r){
+  disc(c,x,y,r,'#f4e7c5');
+  disc(c,x-r*.3,y-r*.25,r*.22,'#ded0a8');disc(c,x+r*.35,y+r*.3,r*.16,'#ded0a8');
+  glow(c,x,y,r*2.1,'#f4e7c5',.06);
+}
+
+/* ---------- 角色 ---------- */
+/* 阿猪侧面（朝右），x=身体左缘，y=脚底 */
+function drawPig(c,x,y,o){
+  o=o||{};
+  var O=o.sil?'#101024':OUT, B=o.sil?'#181832':BODY, S=o.sil?'#181832':SNOUT;
+  var f=o.walk?Math.floor(FILM.t*6)%2:0;
+  if(o.bend)y+=2;
+  /* 尾巴 */ R(c,x-2,y-11,2,2,O);
+  /* 身体 */ R(c,x,y-13,15,9,O);R(c,x+1,y-12,13,7,B);
+  /* 耳朵 */ R(c,x+9,y-16,3,3,O);R(c,x+10,y-15,1,1,B);
+  /* 眼睛 */ if(!o.sil)R(c,x+10,y-11,2,2,EYE);
+  /* 鼻子 */ R(c,x+15,y-11+(o.bend?1:0),3,4,O);R(c,x+16,y-10+(o.bend?1:0),1,2,S);
+  /* 腮红 */ if(!o.sil)R(c,x+11,y-8,2,1,BLUSH);
+  /* 腿 */
+  if(o.sit){
+    R(c,x+9,y-4,2,4,O);R(c,x+3,y-4,2,4,O);
+  }else{
+    R(c,x+10+(f?1:0),y-4,2,4,O);
+    R(c,x+2+(f?0:1),y-4,2,4,O);
+  }
+  /* 挥手 */
+  if(o.wave){var wf=Math.floor(FILM.t*3)%2;R(c,x+13,y-17-(wf?2:0),2,5,O);}
+  /* 灯笼 */
+  if(o.lantern){
+    var lx,ly;
+    if(o.raise){R(c,x+12,y-19,2,7,O);lx=x+10;ly=y-27;}
+    else{lx=x+16;ly=y-9;R(c,lx+2,y-11,1,2,'#c9a86a');}
+    R(c,lx,ly,5,7,'#6b4a35');
+    R(c,lx+1,ly+1,3,5,(o.lantern>1)?WARM2:'#f2c14b');
+    R(c,lx+1,ly-1,3,1,'#6b4a35');
+    if(o.lantern>2)R(c,lx+2,ly+2,1,2,'#ffffff'); /* 星星在里面 */
+  }
+}
+/* 小星星（带脸） */
+function drawStar(c,cx,cy,r,bright,lookDx){
+  var col=bright?WARM2:'#d8c878';
+  glow(c,cx,cy,r*2.6,WARM,bright?.22:.1);
+  star5(c,cx,cy,r,col,Math.sin(FILM.t*1.2)*.08);
+  if(r>=3){
+    var blink=(Math.sin(FILM.t*1.7)>-0.93);
+    var dx=lookDx||0;
+    if(blink){
+      c.fillStyle='#5a4a20';
+      c.fillRect(cx-1.5+dx,cy-1,1,1.6);c.fillRect(cx+.8+dx,cy-1,1,1.6);
+    }else{
+      c.fillStyle='#5a4a20';
+      c.fillRect(cx-1.5+dx,cy-.4,1,.6);c.fillRect(cx+.8+dx,cy-.4,1,.6);
+    }
+  }
+}
+/* 小屋，x=左缘 */
+function house(c,x,lit){
+  R(c,x,118,52,32,'#332e4c');
+  c.fillStyle='#241f38';
+  c.beginPath();c.moveTo(x+26,96);c.lineTo(x-6,120);c.lineTo(x+58,120);c.closePath();c.fill();
+  R(c,x+40,100,5,10,'#241f38');
+  R(c,x+20,132,12,18,'#1a1630');
+  R(c,x+36,126,9,9,lit?GOLD:'#1a1630');
+  if(lit){R(c,x+40,126,1,9,'#241f38');R(c,x+36,130,9,1,'#241f38');glow(c,x+40,130,9,WARM,.1);}
+}
+
+/* ---------- 光照遮罩（第3幕） ---------- */
+var L=document.createElement('canvas');L.width=W;L.height=H;
+var lg=L.getContext('2d');
+function darkness(cx,cy,r,extra){
+  lg.clearRect(0,0,W,H);
+  lg.fillStyle='rgba(4,4,14,.92)';lg.fillRect(0,0,W,H);
+  lg.globalCompositeOperation='destination-out';
+  var rad=lg.createRadialGradient(cx,cy,r*.15,cx,cy,r);
+  rad.addColorStop(0,'rgba(0,0,0,1)');rad.addColorStop(1,'rgba(0,0,0,0)');
+  lg.fillStyle=rad;lg.beginPath();lg.arc(cx,cy,r,0,6.284);lg.fill();
+  if(extra){
+    var rad2=lg.createRadialGradient(extra.x,extra.y,1,extra.x,extra.y,extra.r);
+    rad2.addColorStop(0,'rgba(0,0,0,'+(extra.a||.55)+')');rad2.addColorStop(1,'rgba(0,0,0,0)');
+    lg.fillStyle=rad2;lg.beginPath();lg.arc(extra.x,extra.y,extra.r,0,6.284);lg.fill();
+  }
+  lg.globalCompositeOperation='source-over';
+  g.drawImage(L,0,0);
+}
+
+/* ---------- 第1幕：屋顶望星（0-25s） ---------- */
+function scene1(lt){
+  R(g,0,0,W,H,'#0c0e24');R(g,0,95,W,85,'#10122a');
+  skyStars(g,1,0);moon(g,272,28,11);
+  /* 远处森林 */
+  for(var i=0;i<15;i++)disc(g,i*24+8,124+((i*7)%7),11,'#141530');
+  for(i=0;i<8;i++)disc(g,180+i*20,116+((i*5)%6),12,'#121328');
+  R(g,0,146,W,34,'#191a33');
+  house(g,26,true);
+  /* 阿猪在屋顶 */
+  var px=44,py=114;
+  if(lt<11.5)drawPig(g,px,py,{sit:1});
+  else drawPig(g,px,py,{});
+  if(lt>=11.5&&lt<14.5){
+    g.fillStyle=GOLD;g.font='bold 9px monospace';g.fillText('!',px+9,py-20);
+  }
+  /* 流星 */
+  if(lt>=9.5&&lt<=11.6){
+    var p=(lt-9.5)/2.1;
+    var sx=80+p*178, sy=8+p*82+p*p*22;
+    for(var k=1;k<=6;k++){
+      g.globalAlpha=(1-k/7)*.8;
+      R(g,sx-k*4.5,sy-k*2.6,2,2,'#fff3c0');
+    }
+    g.globalAlpha=1;
+    star5(g,sx,sy,3.5,WARM2);
+  }
+  /* 坠落点微光 */
+  if(lt>11.6)glow(g,258,118,7,WARM,.1+.05*Math.sin(FILM.t*3));
+}
+
+/* ---------- 第2幕：提灯出发（25-55s） ---------- */
+function scene2(lt){
+  var scroll=lt*30;
+  R(g,0,0,W,H,'#0c0e24');
+  skyStars(g,.9,0);moon(g,288,24,9);
+  /* 远山 */
+  var base=-((scroll*.25)%60);
+  for(var x=base-60;x<W+60;x+=60)disc(g,x+30,138,26,'#15173a');
+  /* 中景树 */
+  base=-((scroll*.55)%84);
+  for(x=base-84;x<W+84;x+=84){
+    R(g,x,118,4,32,'#12142e');disc(g,x+2,112,12,'#141838');
+  }
+  /* 地面 */
+  R(g,0,150,W,30,'#20223f');R(g,0,150,W,2,'#2b2e52');
+  var k0=Math.floor(scroll/14)-1;
+  for(var k=k0;k<k0+25;k++){
+    var sx=k*14-scroll;
+    R(g,sx,147,1,3,'#2e3158');
+    if(k%6===0)R(g,sx+5,145,2,2,'#e88aa0');
+    if(k%9===0)R(g,sx+8,146,1,2,GOLD);
+  }
+  /* 小溪与木桥（世界坐标 560-640） */
+  var bx=560-scroll;
+  if(bx>-100&&bx<W+20){
+    R(g,bx,152,80,28,'#22304e');
+    for(k=0;k<6;k++)R(g,bx+8+k*12,156+(k%3)*6,3,1,'#3d5378');
+    R(g,bx-6,146,92,5,'#6b4a35');
+    R(g,bx-6,138,92,2,'#5a3e2c');
+    R(g,bx-4,140,2,6,'#5a3e2c');R(g,bx+84,140,2,6,'#5a3e2c');
+    R(g,bx+24,140,2,6,'#5a3e2c');R(g,bx+54,140,2,6,'#5a3e2c');
+  }
+  /* 萤火虫 */
+  for(i=0;i<9;i++){
+    var wx=i*67+Math.sin(FILM.t*.7+i)*12;
+    var fx=((wx-scroll*.55)%W+W)%W;
+    var fy=98+(i*13)%42+Math.sin(FILM.t*1.3+i)*5;
+    var fa=.25+.4*(0.5+0.5*Math.sin(FILM.t*2+i*2.1));
+    g.globalAlpha=fa;R(g,fx,fy,1,1,WARM2);g.globalAlpha=fa*.4;R(g,fx-1,fy-1,3,3,WARM);
+  }
+  g.globalAlpha=1;
+  /* 阿猪 */
+  var px=86,py=150;
+  glow(g,px+18,py-6,15,WARM,.12);
+  drawPig(g,px,py,{walk:1,lantern:1});
+  var i;
+}
+
+/* ---------- 第3幕：黑森林（55-90s） ---------- */
+function scene3(lt){
+  var scroll = lt<12? lt*22 : (lt<20? 264 : 264+(lt-20)*22);
+  R(g,0,0,W,H,'#07081a');
+  R(g,0,0,W,44,'#0a0b1e');
+  /* 树干 */
+  var k0=Math.floor(scroll/56)-1;
+  for(var k=k0;k<k0+8;k++){
+    var sx=k*56-scroll;
+    R(g,sx,20,9,132,'#10102a');
+    R(g,sx-6,40+(k%3)*18,21,3,'#10102a');
+  }
+  R(g,0,150,W,30,'#13122a');
+  /* 发光小蘑菇 */
+  for(k=k0;k<k0+9;k++){
+    var mx=k*38+19-scroll;
+    if(k%2===0){g.globalAlpha=.5;R(g,mx,147,3,2,'#7fb2d6');R(g,mx+1,145,1,2,'#9fd2f6');g.globalAlpha=1;}
+  }
+  /* 星星坑（世界x=384） */
+  var pitX=384-scroll;
+  R(g,pitX-6,150,16,4,'#05050f');
+  var px=86,py=150;
+  var lanX=px+18,lanY=py-7;
+  /* 小星星 */
+  if(lt<16){
+    var tr=Math.sin(FILM.t*13)*1;
+    drawStar(g,pitX+2+tr,147,3.5+ .4*Math.sin(FILM.t*6),false,0);
+  }else if(lt<17){
+    var p=lt-16;
+    drawStar(g,lerp(pitX+2,lanX,p),lerp(147,lanY,p),lerp(3.5,2.2,p),true,0);
+  }
+  /* 阿猪 */
+  var o={lantern: lt>=17?3:1};
+  if(lt<12)o.walk=1;
+  else if(lt>=14&&lt<16)o.bend=1;
+  else if(lt>=20)o.walk=1;
+  drawPig(g,px,py,o);
+  /* 黑暗与灯光 */
+  var lightR;
+  if(lt<16)lightR=46+2*Math.sin(FILM.t*2.5);
+  else if(lt<19)lightR=46+(lt-16)/3*48;
+  else lightR=94+2*Math.sin(FILM.t*2);
+  var extra=null;
+  if(lt<16)extra={x:pitX+2,y:147,r:13,a:.5};
+  darkness(lanX,lanY,lightR,extra);
+  /* 灯芯亮光盖在黑暗上面 */
+  glow(g,lanX,lanY,lt>=17?13:8,WARM,lt>=17?.3:.2);
+}
+
+/* ---------- 第4幕：山顶放星（90-125s） ---------- */
+function groundY4(px){
+  if(px<24)return 156;
+  if(px<=202)return 156-(px-24)*(82/178);
+  if(px<=234)return 74;
+  return 74+(px-234)*.55;
+}
+function scene4(lt){
+  R(g,0,0,W,H,'#0b0d24');
+  var flash=(lt>=26&&lt<29)?(1-(lt-26)/3):0;
+  skyStars(g,1,flash);
+  moon(g,54,28,10);
+  /* 云 */
+  for(var i=0;i<3;i++){
+    var cx=((300-FILM.t*4+i*130)%380)-30;
+    g.globalAlpha=.08;disc(g,cx,42+i*12,16,'#cdd6ff');disc(g,cx+14,44+i*12,11,'#cdd6ff');g.globalAlpha=1;
+  }
+  /* 山 */
+  g.fillStyle='#181a36';
+  g.beginPath();
+  g.moveTo(0,180);g.lineTo(0,160);g.lineTo(24,156);g.lineTo(202,74);
+  g.lineTo(234,74);g.lineTo(320,124);g.lineTo(320,180);g.closePath();g.fill();
+  g.strokeStyle='#23264a';g.lineWidth=1;
+  g.beginPath();g.moveTo(24,156);g.lineTo(202,74);g.lineTo(234,74);g.stroke();
+  /* 山石 */
+  for(i=0;i<7;i++){var rx=40+i*26,ry=groundY4(rx)+6+(i%3)*10;R(g,rx,ry,3,2,'#202344');}
+  /* 风 */
+  for(i=0;i<10;i++){
+    var wx=320-((FILM.t*55+i*47)%370),wy=26+(i*31)%115;
+    g.globalAlpha=.14;R(g,wx,wy,5,1,BONE);g.globalAlpha=1;
+  }
+  /* 阿猪爬山 */
+  var px=Math.min(30+lt*12.3,203);
+  var py=groundY4(px+7);
+  var o={};
+  if(lt<14.2){o.walk=1;o.lantern=3;}
+  else if(lt<15){o.lantern=3;}
+  else if(lt<16.5){o.raise=1;o.lantern=3;}
+  else if(lt<27){o.raise=1;o.lantern=1;}
+  else{o.wave=1;}
+  drawPig(g,px,py,o);
+  if(o.lantern===3)glow(g,o.raise?px+12:px+18,o.raise?py-24:py-6,13,WARM,.25);
+  /* 小星星的旅程 */
+  if(lt>=16&&lt<18.5){
+    var p=(lt-16)/2.5;
+    drawStar(g,px+12,lerp(py-26,py-44,p)+Math.sin(FILM.t*3)*1.5,lerp(2.2,3.5,p),true,0);
+  }else if(lt>=18.5&&lt<21){
+    drawStar(g,px+12,py-44+Math.sin(FILM.t*2.4)*2.5,3.5,true,-1);
+    if(lt>=20){g.globalAlpha=.6+.4*Math.sin(FILM.t*4);R(g,px+16,py-53,2,2,'#f2a0c0');R(g,px+15,py-54,1,1,'#f2a0c0');R(g,px+18,py-54,1,1,'#f2a0c0');R(g,px+16,py-55,2,1,'#f2a0c0');g.globalAlpha=1;}
+  }else if(lt>=21&&lt<26){
+    var q=(lt-21)/5;q=q*q;
+    var sx=lerp(px+12,252,q),sy=lerp(py-44,12,q)-Math.sin(q*Math.PI)*14;
+    for(var k=1;k<=7;k++){
+      var qq=Math.max(0,q-k*.025);
+      var tx=lerp(px+12,252,qq),ty=lerp(py-44,12,qq)-Math.sin(qq*Math.PI)*14;
+      g.globalAlpha=(1-k/8)*.7;R(g,tx,ty,2,2,WARM2);
+    }
+    g.globalAlpha=1;
+    drawStar(g,sx,sy,lerp(3.5,4,q),true,0);
+  }else if(lt>=26){
+    var tw=1+.25*Math.sin(FILM.t*6);
+    star5(g,252,12,4*tw,WARM2);
+    glow(g,252,12,10,WARM,.2);
+    if(lt<27.5){R(g,244,11,17,1,WARM2);R(g,251,4,1,17,WARM2);}
+  }
+  /* 星群闪耀光环 */
+  if(lt>=26&&lt<27.5){
+    var rr=(lt-26)*80;
+    g.globalAlpha=(1-(lt-26)/1.5)*.5;
+    g.strokeStyle=WARM2;g.lineWidth=1.5;
+    g.beginPath();g.arc(252,12,rr,0,6.284);g.stroke();
+    g.globalAlpha=1;
+  }
+}
+
+/* ---------- 第5幕：回家（125-150s） ---------- */
+function scene5(lt){
+  R(g,0,0,W,H,'#0b0d22');
+  skyStars(g,.85,0);
+  moon(g,40,26,8);
+  for(var i=0;i<12;i++)disc(g,i*30+4,128+((i*5)%6),10,'#131428');
+  R(g,0,152,W,28,'#191a33');
+  house(g,258,true);
+  /* 阿猪回家 */
+  var px=16+Math.min(lt,14)*16.4, py=152;
+  var o={};
+  if(lt<14)o.walk=1;
+  drawPig(g,px,py,o);
+  /* 跟着的小星星 */
+  var sx=px-2+Math.sin(FILM.t*1.6)*2, sy=100+Math.sin(FILM.t*2.1)*3;
+  drawStar(g,sx,sy,3.5,true,0);
+  glow(g,px+7,150,17,WARM,.07);
+  /* 淡出 → 片尾字卡 */
+  if(lt>17.5){
+    g.globalAlpha=clamp((lt-17.5)/2,0,1);
+    R(g,0,0,W,H,'#050410');g.globalAlpha=1;
+  }
+  if(lt>=19.8){
+    var a=clamp((lt-19.8)/1.5,0,1);
+    g.globalAlpha=a;g.textAlign='center';
+    g.fillStyle=GOLD;g.font='900 20px "Noto Serif SC","SimSun",serif';
+    g.fillText('《 星 星 回 家 》',160,80);
+    g.fillStyle=BONE;g.font='9px Consolas,monospace';
+    g.fillText('T H E   E N D',160,102);
+    g.fillStyle='#b9b29c';g.font='9px "Microsoft YaHei",sans-serif';
+    g.fillText('阿猪出品 · 一颗星星的回家路',160,120);
+    g.textAlign='left';g.globalAlpha=1;
+  }
+}
+
+/* ---------- 渲染主控 ---------- */
+var SCENES=[scene1,scene2,scene3,scene4,scene5];
+function boundaryFade(t){
+  var f=0;
+  if(t<.8)f=1-t/.8;
+  var B=[25,55,90,125];
+  for(var i=0;i<4;i++){
+    var d=Math.abs(t-B[i]);
+    if(d<.8)f=Math.max(f,1-d/.8);
+  }
+  return f;
+}
+function render(){
+  var t=FILM.t, si=sceneIdx(t);
+  SCENES[si](t-sceneStart(si));
+  /* 转场黑 */
+  var f=boundaryFade(t);
+  if(f>0){g.globalAlpha=f;R(g,0,0,W,H,'#050410');g.globalAlpha=1;}
+  /* 电影黑边 */
+  R(g,0,0,W,13,'#050410');R(g,0,167,W,13,'#050410');
+  /* 字幕 */
+  for(var i=0;i<SUBS.length;i++){
+    var s=SUBS[i];
+    if(t>=s[0]&&t<=s[1]){
+      var a=clamp((t-s[0])/.35,0,1)*clamp((s[1]-t)/.35,0,1);
+      g.font='bold 10px "Microsoft YaHei","PingFang SC",sans-serif';
+      g.textAlign='center';
+      var w=g.measureText(s[2]).width;
+      g.globalAlpha=a*.55;R(g,160-w/2-5,151,w+10,13,'#05040f');
+      g.globalAlpha=a;
+      g.fillStyle=s[3]||BONE;
+      g.fillText(s[2],160,161);
+      g.globalAlpha=1;g.textAlign='left';
+      break;
+    }
+  }
+  document.getElementById('progFill').style.width=(t/FILM.dur*100)+'%';
+}
+
+/* ---------- 主循环 ---------- */
+var lastTs=null;
+function loop(ts){
+  requestAnimationFrame(loop);
+  if(lastTs===null){lastTs=ts;return;}
+  var dt=Math.min((ts-lastTs)/1000,.05);lastTs=ts;
+  if(FILM.playing){
+    FILM.t+=dt;
+    for(var i=0;i<EVENTS.length;i++){
+      if(!EVENTS[i].fired&&FILM.t>=EVENTS[i].t){EVENTS[i].fired=true;EVENTS[i].f();}
+    }
+    schedMusic();
+    if(FILM.t>=FILM.dur)finish();
+  }
+  render();
+}
+requestAnimationFrame(loop);
+
+function finish(){
+  FILM.playing=false;FILM.t=FILM.dur-0.001;
+  document.getElementById('endOv').classList.remove('hidden');
+  renderPause();
+}
+function restart(){
+  FILM.t=0;resetEvents(0);mscene=-1;
+  document.getElementById('endOv').classList.add('hidden');
+  document.getElementById('titleOv').classList.add('hidden');
+  FILM.playing=true;FILM.started=true;
+  try{ac().resume();}catch(e){}
+  renderPause();
+}
+
+/* ---------- 控件 ---------- */
+var pauseBtn=document.getElementById('pauseBtn'),sndBtn=document.getElementById('sndBtn');
+function renderPause(){pauseBtn.textContent=FILM.playing?'⏸ 暂停':'▶ 继续';}
+function renderSnd(){sndBtn.textContent=muted?'✕':'♪';}
+pauseBtn.addEventListener('click',function(){
+  if(!FILM.started)return;
+  if(FILM.t>=FILM.dur-0.01)return;
+  FILM.playing=!FILM.playing;
+  if(FILM.playing){try{ac().resume();}catch(e){}mscene=-1;}
+  renderPause();
+});
+sndBtn.addEventListener('click',function(){
+  muted=!muted;
+  try{localStorage.setItem('starhome-muted',muted?'1':'0');}catch(e){}
+  if(!muted)mscene=-1;
+  renderSnd();
+});
+document.getElementById('reBtn').addEventListener('click',function(){if(FILM.started)restart();});
+document.getElementById('startBtn').addEventListener('click',restart);
+document.getElementById('againBtn').addEventListener('click',restart);
+document.addEventListener('keydown',function(e){
+  if(e.code==='Space'&&FILM.started){e.preventDefault();pauseBtn.click();}
+});
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden&&FILM.playing){FILM.playing=false;renderPause();}
+});
+renderSnd();renderPause();
+
+/* 调试：跳转到任意秒 */
+window.__seek=function(t){
+  t=clamp(t,0,FILM.dur-0.01);FILM.t=t;resetEvents(t);mscene=-1;
+  if(!FILM.started){FILM.started=true;document.getElementById('titleOv').classList.add('hidden');}
+  document.getElementById('endOv').classList.add('hidden');
+};
+window.__film=FILM;
+window.__render=render;
+})();
+</script>
+</body>
+</html>
