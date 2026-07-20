@@ -1409,6 +1409,7 @@
 
   // ---------- landmark fly-to & orbit ----------
   function selectLandmark(i) {
+    if (WALK.on) exitWalk();
     var lm = LANDMARKS[i];
     var ang = Math.atan2(camera.position.z - lm.c[2], camera.position.x - lm.c[0]);
     fly = {
@@ -1483,7 +1484,7 @@
     var ds = dotsEl.children;
     for (var i = 0; i < ds.length; i++) ds[i].className = 'dot' + (i === tour.shot ? ' on' : '');
   }
-  function jumpTo(i) { tour.shot = i; tour.t = 0; setPlaying(true); }
+  function jumpTo(i) { if (WALK.on) exitWalk(); tour.shot = i; tour.t = 0; setPlaying(true); }
   function setPlaying(p) {
     mode = p ? 'tour' : 'manual';
     btnPlay.textContent = p ? '⏸ 暂停巡游' : '▶ 继续巡游';
@@ -1492,10 +1493,24 @@
     setChip(-1);
     showCard(null);
   }
-  btnPlay.addEventListener('click', function () { setPlaying(mode !== 'tour'); });
-  renderer.domElement.addEventListener('pointerdown', function () { if (mode !== 'manual') setPlaying(false); });
-  renderer.domElement.addEventListener('wheel', function () { if (mode !== 'manual') setPlaying(false); }, { passive: true });
+  btnPlay.addEventListener('click', function () {
+    if (mode === 'walk') exitWalk();
+    setPlaying(mode !== 'tour');
+  });
+  renderer.domElement.addEventListener('pointerdown', function (ev) {
+    if (mode === 'walk') {
+      if (ev.pointerType === 'touch' && ev.clientX < window.innerWidth * 0.42) {
+        if (!WALK.joy) { WALK.joy = { id: ev.pointerId, bx: ev.clientX, by: ev.clientY, f: 0, r: 0 }; showJoy(ev.clientX, ev.clientY, 0, 0); }
+      } else if (!WALK.look) {
+        WALK.look = { id: ev.pointerId, x: ev.clientX, y: ev.clientY };
+      }
+      return;
+    }
+    if (mode !== 'manual') setPlaying(false);
+  });
+  renderer.domElement.addEventListener('wheel', function () { if (mode !== 'manual' && mode !== 'walk') setPlaying(false); }, { passive: true });
   window.addEventListener('keydown', function (ev) {
+    if (mode === 'walk') return;
     if (ev.code === 'Space') { ev.preventDefault(); setPlaying(mode !== 'tour'); }
     var n = parseInt(ev.key, 10);
     if (n >= 1 && n <= Math.min(SHOTS.length, 9)) jumpTo(n - 1);
@@ -1663,6 +1678,203 @@
     }
   });
 
+  // ---------- ambient sound (procedural: waves / birds / rain) ----------
+  var SND = { on: false, ctx: null, waveGain: null, rainGain: null, birdTimer: null };
+  function noiseBuffer(ctx, secs) {
+    var buf = ctx.createBuffer(1, ctx.sampleRate * secs, ctx.sampleRate);
+    var d = buf.getChannelData(0);
+    var last = 0;
+    for (var i = 0; i < d.length; i++) {   // brown-ish noise
+      var w = Math.random() * 2 - 1;
+      last = (last + 0.02 * w) / 1.02;
+      d[i] = last * 3.5;
+    }
+    return buf;
+  }
+  function startSound() {
+    if (!SND.ctx) {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      SND.ctx = ctx;
+      // waves: looped brown noise -> lowpass, slow swell LFO
+      var src = ctx.createBufferSource();
+      src.buffer = noiseBuffer(ctx, 4); src.loop = true;
+      var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420;
+      SND.waveGain = ctx.createGain(); SND.waveGain.gain.value = 0.05;
+      var lfo = ctx.createOscillator(); lfo.frequency.value = 0.09;
+      var lfoGain = ctx.createGain(); lfoGain.gain.value = 0.03;
+      lfo.connect(lfoGain); lfoGain.connect(SND.waveGain.gain);
+      src.connect(lp); lp.connect(SND.waveGain); SND.waveGain.connect(ctx.destination);
+      src.start(); lfo.start();
+      // rain: white noise -> highpass, gated by weather
+      var rsrc = ctx.createBufferSource();
+      var rbuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+      var rd = rbuf.getChannelData(0);
+      for (var i = 0; i < rd.length; i++) rd[i] = Math.random() * 2 - 1;
+      rsrc.buffer = rbuf; rsrc.loop = true;
+      var hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 900;
+      SND.rainGain = ctx.createGain(); SND.rainGain.gain.value = 0;
+      rsrc.connect(hp); hp.connect(SND.rainGain); SND.rainGain.connect(ctx.destination);
+      rsrc.start();
+      // birds: sporadic chirps in daytime
+      SND.birdTimer = setInterval(function () {
+        if (!SND.on || NIGHT_ON || (WX.rain && WX.rain.visible)) return;
+        if (Math.random() < 0.45) return;
+        var n = 2 + Math.floor(Math.random() * 3);
+        for (var k = 0; k < n; k++) {
+          (function (k2) {
+            var t0 = SND.ctx.currentTime + k2 * (0.12 + Math.random() * 0.08);
+            var o = SND.ctx.createOscillator();
+            var g = SND.ctx.createGain();
+            var f = 2400 + Math.random() * 1600;
+            o.frequency.setValueAtTime(f, t0);
+            o.frequency.exponentialRampToValueAtTime(f * (1.25 + Math.random() * 0.3), t0 + 0.07);
+            g.gain.setValueAtTime(0, t0);
+            g.gain.linearRampToValueAtTime(0.028, t0 + 0.015);
+            g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.09);
+            o.connect(g); g.connect(SND.ctx.destination);
+            o.start(t0); o.stop(t0 + 0.12);
+          })(k);
+        }
+      }, 3800);
+    }
+    SND.ctx.resume();
+    SND.on = true;
+  }
+  var btnSnd = document.getElementById('btnSnd');
+  btnSnd.addEventListener('click', function () {
+    if (SND.on) {
+      SND.on = false;
+      if (SND.ctx) SND.ctx.suspend();
+      btnSnd.textContent = '🔇';
+    } else {
+      startSound();
+      btnSnd.textContent = '🔊';
+    }
+  });
+
+  // ---------- first-person walk mode ----------
+  var WALK = { on: false, yaw: Math.PI, pitch: -0.03, pos: new THREE.Vector3(-40, 0, 100), keys: {}, look: null, joy: null, bob: 0 };
+  var WALK_AREAS = [
+    [-420, 350, -95, 111],     // plaza + promenade + Wanghai Rd
+    [-40, 40, -270, -95],      // crossing to the ship plaza
+    [-200, 80, -505, -270],    // Minghua plaza
+    [-710, -150, 140, 440],    // Prince Bay coast strip
+    [-630, -110, 440, 766],    // K11 platform
+    [230, 470, -880, -640],    // Nanhai E-Cool courtyards
+    [940, 1360, -1163, -1137]  // Old town main street
+  ];
+  var WALK_BLOCKS = [
+    [-81, 82, -68, 68], [-132, 100, -207, -158], [40, 76, 56, 94], [-74, -54, -92, -60],
+    [-113, -95, 79, 89], [-157, -105, 80, 96], [-300, -228, -45, 5], [-48, 44, -462, -298],
+    [-207, -157, -437, -411], [-198, -154, -380, -356], [-213, -163, -319, -293],
+    [8, 64, -425, -399], [22, 78, -368, -340], [10, 62, -315, -289],
+    [-157, -139, -467, -449], [-135, -101, -350, -326],
+    [-545, -195, 558, 660], [-242, -198, 675, 705], [-599, -565, 703, 729], [-597, -423, 712, 760],
+    [242, 268, -800, -732], [280, 306, -800, -732], [318, 344, -800, -732],
+    [356, 382, -800, -732], [394, 420, -800, -732], [432, 458, -800, -732]
+  ];
+  function inRect(r, x, z) { return x >= r[0] && x <= r[1] && z >= r[2] && z <= r[3]; }
+  function canWalk(x, z) {
+    var ok = false;
+    for (var i = 0; i < WALK_AREAS.length; i++) { if (inRect(WALK_AREAS[i], x, z)) { ok = true; break; } }
+    if (!ok) return false;
+    for (var j = 0; j < WALK_BLOCKS.length; j++) { if (inRect(WALK_BLOCKS[j], x, z)) return false; }
+    return true;
+  }
+  var hintEl = document.getElementById('hint');
+  var hintDefault = hintEl.innerHTML;
+  var joyEl = document.getElementById('joy');
+  var btnWalk = document.getElementById('btnWalk');
+  var WALK_SPAWNS = {
+    swcac:    { p: [16, 103], yaw: Math.PI - 0.35, name: '滨海步道' },
+    seaworld: { p: [-60, -292], yaw: Math.PI, name: '海上世界广场' },
+    k11:      { p: [-370, 716], yaw: Math.PI, name: 'K11 海滨长廊' },
+    ecool:    { p: [352, -662], yaw: Math.PI, name: '南海意库' },
+    oldtown:  { p: [1300, -1150], yaw: -Math.PI / 2, name: '蛇口老街' }
+  };
+  function enterWalk() {
+    var id = (focus && focus.lm) ? focus.lm.id : 'swcac';
+    var sp = WALK_SPAWNS[id] || WALK_SPAWNS.swcac;
+    mode = 'walk';
+    WALK.on = true;
+    WALK.pos.set(sp.p[0], 0, sp.p[1]); WALK.yaw = sp.yaw; WALK.pitch = 0.02;
+    camera.fov = 58; camera.updateProjectionMatrix();
+    controls.enabled = false;
+    fadePass.uniforms.amount.value = 0;
+    btnWalk.classList.add('on'); btnWalk.textContent = '⛔';
+    btnPlay.textContent = '▶ 继续巡游';
+    setChip(-1); showCard(null);
+    shotEl.textContent = '漫步 · ' + sp.name;
+    hintEl.innerHTML = IS_MOBILE ? '<span>左半屏摇杆移动 · 右半屏拖拽转视角</span>'
+      : '<span>W A S D / 方向键 移动 · 拖拽转视角 · Shift 快走 · Esc 退出</span>';
+    hintEl.style.opacity = 1;
+  }
+  function exitWalk() {
+    if (!WALK.on) return;
+    WALK.on = false; WALK.joy = null; WALK.look = null; joyEl.style.display = 'none';
+    btnWalk.classList.remove('on'); btnWalk.textContent = '🚶';
+    camera.fov = 42; camera.updateProjectionMatrix();
+    controls.enabled = true;
+    controls.target.set(WALK.pos.x + Math.sin(WALK.yaw) * 40, 10, WALK.pos.z + Math.cos(WALK.yaw) * 40);
+    mode = 'manual';
+    hintEl.innerHTML = hintDefault;
+    shotLabel();
+  }
+  btnWalk.addEventListener('click', function () { WALK.on ? exitWalk() : enterWalk(); });
+  window.addEventListener('keydown', function (ev) {
+    if (!WALK.on) return;
+    var k = ev.key.toLowerCase();
+    if (k === 'escape') { exitWalk(); return; }
+    if (['w', 'a', 's', 'd', 'shift', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].indexOf(k) >= 0) {
+      WALK.keys[k] = true;
+      if (k.indexOf('arrow') === 0 || k === ' ') ev.preventDefault();
+    }
+  });
+  window.addEventListener('keyup', function (ev) { WALK.keys[ev.key.toLowerCase()] = false; });
+  function showJoy(bx, by, vx, vy) {
+    joyEl.style.display = 'block';
+    joyEl.style.left = (bx - 45) + 'px'; joyEl.style.top = (by - 45) + 'px';
+    joyEl.firstElementChild.style.transform = 'translate(' + vx * 28 + 'px,' + vy * 28 + 'px)';
+  }
+  window.addEventListener('pointermove', function (ev) {
+    if (!WALK.on) return;
+    if (WALK.joy && ev.pointerId === WALK.joy.id) {
+      var vx = (ev.clientX - WALK.joy.bx) / 55, vy = (ev.clientY - WALK.joy.by) / 55;
+      var l = Math.hypot(vx, vy); if (l > 1) { vx /= l; vy /= l; }
+      WALK.joy.r = vx; WALK.joy.f = -vy;
+      showJoy(WALK.joy.bx, WALK.joy.by, vx, vy);
+    } else if (WALK.look && ev.pointerId === WALK.look.id) {
+      WALK.yaw -= (ev.clientX - WALK.look.x) * 0.0042;
+      WALK.pitch = Math.max(-0.55, Math.min(0.5, WALK.pitch - (ev.clientY - WALK.look.y) * 0.0032));
+      WALK.look.x = ev.clientX; WALK.look.y = ev.clientY;
+    }
+  });
+  window.addEventListener('pointerup', function (ev) {
+    if (WALK.joy && ev.pointerId === WALK.joy.id) { WALK.joy = null; joyEl.style.display = 'none'; }
+    if (WALK.look && ev.pointerId === WALK.look.id) WALK.look = null;
+  });
+  function updateWalk(dt) {
+    var run = WALK.keys['shift'] ? 8.5 : 4.2;
+    var f = ((WALK.keys['w'] || WALK.keys['arrowup']) ? 1 : 0) - ((WALK.keys['s'] || WALK.keys['arrowdown']) ? 1 : 0);
+    var r = ((WALK.keys['d'] || WALK.keys['arrowright']) ? 1 : 0) - ((WALK.keys['a'] || WALK.keys['arrowleft']) ? 1 : 0);
+    if (WALK.joy) { f += WALK.joy.f; r += WALK.joy.r; }
+    var len = Math.hypot(f, r);
+    if (len > 1) { f /= len; r /= len; }
+    var sinY = Math.sin(WALK.yaw), cosY = Math.cos(WALK.yaw);
+    var dx = (sinY * f - cosY * r) * run * dt;
+    var dz = (cosY * f + sinY * r) * run * dt;
+    if (canWalk(WALK.pos.x + dx, WALK.pos.z)) WALK.pos.x += dx;
+    if (canWalk(WALK.pos.x, WALK.pos.z + dz)) WALK.pos.z += dz;
+    var moving = len > 0.05;
+    WALK.bob += moving ? dt * 7.5 : 0;
+    var eye = 1.7 + (moving ? Math.sin(WALK.bob) * 0.045 : 0);
+    camera.position.set(WALK.pos.x, eye, WALK.pos.z);
+    var cp = Math.cos(WALK.pitch);
+    lookCur.set(WALK.pos.x + sinY * cp * 10, eye + Math.sin(WALK.pitch) * 10, WALK.pos.z + cosY * cp * 10);
+    camera.lookAt(lookCur);
+    controls.target.copy(lookCur);
+  }
+
   // ---------- record / export mode (1080p, UI hidden, one full tour loop -> webm) ----------
   var REC = { on: false, mr: null, chunks: [] };
   var btnRec = document.getElementById('btnRec');
@@ -1804,6 +2016,10 @@
       if (b.g.position.x > 780) b.g.position.x = -90;    // keep clear of the Prince Bay coast strip
       if (b.g.position.x < -90) b.g.position.x = 780;
     });
+    if (SND.on && SND.rainGain) {
+      var rTarget = (WX.rain && WX.rain.visible) ? 0.05 : 0;
+      SND.rainGain.gain.value += (rTarget - SND.rainGain.gain.value) * Math.min(dt * 2, 1);
+    }
     if (WX.rain && WX.rain.visible) {
       WX.rain.position.x = camera.position.x;
       WX.rain.position.z = camera.position.z;
@@ -1827,6 +2043,7 @@
     if (mode === 'tour') applyShot(dt);
     else if (mode === 'fly') { updateFX(null, 0); stepFly(dt); }
     else if (mode === 'focus') { updateFX(null, 0); stepFocus(dt); }
+    else if (mode === 'walk') { updateFX(null, 0); updateWalk(dt); }
     else { updateFX(null, 0); controls.update(); }
     drawMinimap();
     composer.render();
@@ -1839,6 +2056,10 @@
     setComposerSize(window.innerWidth, window.innerHeight);
   });
   buildVegetation();
+  (function () {
+    var ld = document.getElementById('loader');
+    if (ld) { ld.classList.add('done'); setTimeout(function () { if (ld.parentNode) ld.parentNode.removeChild(ld); }, 800); }
+  })();
   CLIPMATS.forEach(function (m) { m.clippingPlanes = [secPlane]; m.clipShadows = true; });
   // ground-family materials stay uncut so the section reads as a building slice, not a world slice
   [M.ground, M.water, M.pave, M.road, M.walk, M.board, M.sand, M.bike, M.pool, osmMats.road, whiteLine]
@@ -1847,6 +2068,14 @@
   animate();
 
   // debug snapshot helpers
+  window.__plainsnap = function (w) {
+    w = w || 960;
+    renderer.render(scene, camera);
+    var c2 = document.createElement('canvas');
+    c2.width = w; c2.height = Math.round(w * window.innerHeight / window.innerWidth);
+    c2.getContext('2d').drawImage(renderer.domElement, 0, 0, c2.width, c2.height);
+    return c2.toDataURL('image/jpeg', 0.82);
+  };
   window.__snap = function (w) {
     w = w || 960;
     composer.render();
@@ -1866,6 +2095,20 @@
     var lm = LANDMARKS[i];
     focus = { lm: lm, ang: (deg || 0) * Math.PI / 180, idx: i };
     mode = 'focus'; stepFocus(0); mode = 'manual';
+    return window.__snap(w);
+  };
+  window.__walkdbg = function (steps, key, w) {
+    if (!WALK.on) enterWalk();
+    WALK.keys[key || 'w'] = true;
+    for (var i = 0; i < (steps || 60); i++) updateWalk(1 / 60);
+    WALK.keys[key || 'w'] = false;
+    if (w === 0) {
+      return JSON.stringify({
+        cam: camera.position.toArray().map(function (v) { return Math.round(v * 10) / 10; }),
+        look: lookCur.toArray().map(function (v) { return Math.round(v * 10) / 10; }),
+        mode: mode, walkOn: WALK.on, yaw: Math.round(WALK.yaw * 100) / 100
+      });
+    }
     return window.__snap(w);
   };
 })();
