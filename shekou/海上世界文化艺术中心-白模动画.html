@@ -4784,7 +4784,7 @@ var OSM = {"b":[{"h":37.9,"a":65093,"p":[-1398,-139,-1371,-107,-1355,-88,-1363,-
     walk:    0xecece6,
     board:   0xe7ddca,   // timber boardwalk
     sand:    0xeee6d2,
-    water:   0xbfd4da,
+    water:   0xa4c9d2,
     pool:    0x9fd0cc,   // Minghua fountain pool (teal)
     bike:    0xc9695a,   // red greenway
     green:   0x6fbf3f,
@@ -4863,7 +4863,7 @@ var OSM = {"b":[{"h":37.9,"a":65093,"p":[-1398,-139,-1371,-107,-1355,-88,-1363,-
     board:   lam(COL.board),
     sand:    lam(COL.sand),
     water:   (function () {
-      var m = new THREE.MeshPhongMaterial({ color: COL.water, flatShading: true, shininess: 6, specular: 0x333333 });
+      var m = new THREE.MeshPhongMaterial({ color: 0x6da4bb, flatShading: true, shininess: 80, specular: 0x223038, fog: false });
       m.polygonOffset = true; m.polygonOffsetFactor = 1; m.polygonOffsetUnits = 1;
       return m;
     })(),
@@ -5273,9 +5273,28 @@ var OSM = {"b":[{"h":37.9,"a":65093,"p":[-1398,-139,-1371,-107,-1355,-88,-1363,-
   var S = new THREE.Group();
   scene.add(S);
 
-  var ground = new THREE.Mesh(new THREE.PlaneGeometry(4200, 4200), M.ground);
-  ground.rotation.x = -Math.PI / 2; ground.position.y = -0.05; ground.receiveShadow = true;
-  S.add(ground);
+  // land plate: covers everything north of the shoreline, with cutouts where water/sunken decks live
+  var ground = (function () {
+    var sh = new THREE.Shape();                      // shape (x, y) with y = -z after rotation
+    sh.moveTo(-2100, -140); sh.lineTo(2100, -140);
+    sh.lineTo(2100, 2100); sh.lineTo(-2100, 2100);
+    sh.closePath();
+    function hole(x0, x1, z0, z1) {
+      var p = new THREE.Path();
+      p.moveTo(x0, -z1); p.lineTo(x1, -z1); p.lineTo(x1, -z0); p.lineTo(x0, -z0);
+      p.closePath();
+      return p;
+    }
+    sh.holes.push(hole(640, 960, -400, -160));       // fishing-port basin
+    sh.holes.push(hole(700, 900, -150, 130));        // channel to the bay
+    sh.holes.push(hole(-285, 145, 110, 139.5));      // sunken amphitheater steps + boardwalk
+    var m = new THREE.Mesh(new THREE.ShapeGeometry(sh), M.ground);
+    m.rotation.x = -Math.PI / 2;
+    m.position.y = -0.05;
+    m.receiveShadow = true;
+    S.add(m);
+    return m;
+  })();
   plate(S, 840, 200, 20, 0.02, -6, M.pave, { t: 0.1 });
   joints(S, -270, 330, -64, 64, 12, 0.16);
 
@@ -5409,12 +5428,16 @@ var OSM = {"b":[{"h":37.9,"a":65093,"p":[-1398,-139,-1371,-107,-1355,-88,-1363,-
   cyclist(-240, 1, 6.5, 0xd6604f); cyclist(40, 1, 5.8, 0xf2f1ec); cyclist(180, -1, 7, 0x6f8fb5); cyclist(-60, -1, 6, 0xe8b64c);
 
   // --- water with gentle low-poly ripples ---
-  var waterGeo = new THREE.PlaneGeometry(3400, 1400, 96, 40);
+  var waterGeo = new THREE.PlaneGeometry(3400, 1440, 96, 40);
   var water = new THREE.Mesh(waterGeo, M.water);
   water.rotation.x = -Math.PI / 2;
-  water.position.set(0, -3.0, 140 + 700);
+  water.position.set(0, -3.0, 105 + 720);
   S.add(water);
-  plate(S, 3400, 55, 0, -2.85, 168, lam(0xcfdfe3), { t: 0.1 });   // lighter nearshore shallows
+  // faked depth gradient: shallows band + mid band over the deep plane (fog-free like the sea itself)
+  var shallowMat = lam(0xc4e0e6, { fog: false });
+  var midSeaMat = lam(0x93c3d3, { fog: false });
+  plate(S, 3400, 55, 0, -2.85, 168, shallowMat, { t: 0.1 });
+  plate(S, 3400, 130, 0, -2.9, 262, midSeaMat, { t: 0.1 });
   var wPos = waterGeo.attributes.position;
   var wBase = new Float32Array(wPos.array.length);
   wBase.set(wPos.array);
@@ -5602,6 +5625,25 @@ var OSM = {"b":[{"h":37.9,"a":65093,"p":[-1398,-139,-1371,-107,-1355,-88,-1363,-
         { t: 0.5, edges: true, soft: true, cast: true, rotY: ang });
     }
   })();
+  // 女娲补天 statue on the waterfront corner of the park
+  (function () {
+    var N = new THREE.Group(); N.position.set(246, 2.2, 84); N.rotation.y = 0.35; P2.add(N);
+    var plinth = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.6, 1.4, 8), M.pave);
+    plinth.position.y = 0.7; plinth.castShadow = true; N.add(plinth); addEdges(plinth, true);
+    var skirt = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 2.5, 6.5, 7), M.steel);
+    skirt.position.y = 4.6; skirt.castShadow = true; N.add(skirt); addEdges(skirt, true);
+    var torso = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.95, 3.2, 6), M.steel);
+    torso.position.set(0.1, 9.2, 0); torso.rotation.z = -0.12; torso.castShadow = true; N.add(torso); addEdges(torso, true);
+    var head = new THREE.Mesh(new THREE.IcosahedronGeometry(0.62, 0), M.steel);
+    head.position.set(0.22, 11.3, 0); head.castShadow = true; N.add(head); addEdges(head, true);
+    var armUp = new THREE.Mesh(new THREE.BoxGeometry(0.34, 3.4, 0.34), M.steel);
+    armUp.position.set(1.05, 12.0, 0); armUp.rotation.z = -0.5; armUp.castShadow = true; N.add(armUp); addEdges(armUp, true);
+    var armSide = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.4, 0.3), M.steel);
+    armSide.position.set(-0.85, 9.9, 0); armSide.rotation.z = 0.9; armSide.castShadow = true; N.add(armSide); addEdges(armSide, true);
+    var stone = new THREE.Mesh(new THREE.IcosahedronGeometry(0.95, 0), M.coral);
+    stone.position.set(1.95, 13.9, 0); stone.rotation.set(0.4, 0.8, 0.2); stone.castShadow = true; N.add(stone); addEdges(stone);
+  })();
+
   // heritage pavilion cluster (dark pitched roofs, NE of park)
   (function () {
     [[168, -52, 20, 12, 0.15], [196, -38, 16, 11, -0.2], [222, -58, 18, 12, 0.05], [248, -30, 15, 10, 0.3], [204, -80, 22, 13, -0.1]]
@@ -6014,11 +6056,23 @@ var OSM = {"b":[{"h":37.9,"a":65093,"p":[-1398,-139,-1371,-107,-1355,-88,-1363,-
     scatter(4, 620, 650, -370, -200, 0.15);        // 渔人码头
     var bodyG = new THREE.CylinderGeometry(0.17, 0.21, 1.15, 6);
     var headG = new THREE.SphereGeometry(0.16, 8, 6);
+    // strolling pedestrians ping-pong along paths (updated each frame)
+    var walkerDefs = [
+      { x0: -240, x1: 240, z: 84, y: 0.15, v: 1.3, ph: 0 }, { x0: -180, x1: 200, z: 88, y: 0.15, v: 1.1, ph: 120 },
+      { x0: -120, x1: 240, z: 80, y: 0.15, v: 1.5, ph: 260, }, { x0: -220, x1: 60, z: 106, y: 0.15, v: 1.2, ph: 40 },
+      { x0: -60, x1: 200, z: 104, y: 0.15, v: 1.4, ph: 300 },
+      { x0: -600, x1: -270, z: 720, y: 0.15, v: 1.2, ph: 60 }, { x0: -560, x1: -220, z: 726, y: 0.15, v: 1.0, ph: 200 },
+      { x0: -180, x1: 60, z: -300, y: 0.15, v: 1.3, ph: 90 }, { x0: -140, x1: 30, z: -322, y: 0.15, v: 1.1, ph: 210 },
+      { x0: 960, x1: 1330, z: -1150, y: 0.12, v: 1.2, ph: 30 }, { x0: 1000, x1: 1300, z: -1146, y: 0.12, v: 1.4, ph: 400 },
+      { x0: 260, x1: 440, z: -700, y: 0.15, v: 1.1, ph: 150 },
+      { x0: -70, x1: -42, z: 40, y: 17.0, v: 0.8, ph: 0 }, { x0: -70, x1: 30, z: -46, y: 17.0, v: 0.9, ph: 90 }
+    ];
+    var total = spots.length + walkerDefs.length;
     var bodyM = new THREE.MeshLambertMaterial({ color: 0xffffff });
     var headM = new THREE.MeshLambertMaterial({ color: 0xf2ede4 });
     CLIPMATS.push(bodyM, headM);
-    var bodyI = new THREE.InstancedMesh(bodyG, bodyM, spots.length);
-    var headI = new THREE.InstancedMesh(headG, headM, spots.length);
+    var bodyI = new THREE.InstancedMesh(bodyG, bodyM, total);
+    var headI = new THREE.InstancedMesh(headG, headM, total);
     var mtx = new THREE.Matrix4();
     var accents = [0xd6604f, 0x6f8fb5, 0xe8b64c, 0x7fb069];
     var cw = new THREE.Color(0xf2f1ec);
@@ -6031,9 +6085,23 @@ var OSM = {"b":[{"h":37.9,"a":65093,"p":[-1398,-139,-1371,-107,-1355,-88,-1363,-
       headI.setMatrixAt(i, mtx);
       bodyI.setColorAt(i, rnd() < 0.22 ? new THREE.Color(accents[Math.floor(rnd() * accents.length)]) : cw);
     });
+    walkerDefs.forEach(function (d, k) {
+      d.s = 0.92 + rnd() * 0.2;
+      var L0 = d.x1 - d.x0;
+      var m0 = d.ph % (2 * L0);
+      var px0 = m0 < L0 ? d.x0 + m0 : d.x1 - (m0 - L0);
+      mtx.makeScale(d.s, d.s, d.s);
+      mtx.setPosition(px0, d.y + 0.58 * d.s, d.z);
+      bodyI.setMatrixAt(spots.length + k, mtx);
+      mtx.setPosition(px0, d.y + 1.32 * d.s, d.z);
+      headI.setMatrixAt(spots.length + k, mtx);
+      bodyI.setColorAt(spots.length + k, rnd() < 0.35 ? new THREE.Color(accents[Math.floor(rnd() * accents.length)]) : cw);
+    });
     bodyI.instanceColor.needsUpdate = true;
     S.add(bodyI); S.add(headI);
+    PEOPLE = { bodyI: bodyI, headI: headI, defs: walkerDefs, base: spots.length, mtx: new THREE.Matrix4() };
   })();
+  var PEOPLE = PEOPLE || null;
 
   // ================================================================
   // CITY BACKDROP + MOUNTAINS
@@ -6128,8 +6196,19 @@ var OSM = {"b":[{"h":37.9,"a":65093,"p":[-1398,-139,-1371,-107,-1355,-88,-1363,-
     if (fx === 'sun') {
       var a = Math.PI * (0.12 + 0.76 * e);
       sun.position.set(700 * Math.cos(a), 520 * Math.sin(a) + 60, 250);
+      sun.color.copy(noonCol);
+    } else if (WX.on && WX.isDay && !NIGHT_ON) {
+      // real Shenzhen sun: azimuth 0 = due south (+z), positive toward west (-x)
+      var sp2 = shenzhenSun();
+      var altC = Math.max(sp2.alt, 0.06);
+      var ch = Math.cos(altC), sh = Math.sin(altC);
+      sun.position.set(-700 * Math.sin(sp2.az) * ch, 700 * sh, 700 * Math.cos(sp2.az) * ch);
+      var warm = Math.max(0, Math.min(1, 1 - (sp2.alt / (0.35))));   // warm up below ~20°
+      sun.color.copy(noonCol).lerp(duskCol, warm * 0.85);
+      hemi.color.setHex(0xffffff).lerp(duskCol, warm * 0.25);
     } else {
       sun.position.set(260, 430, 240);
+      if (!NIGHT_ON) { sun.color.copy(noonCol); hemi.color.setHex(0xffffff); }
     }
     // the SSAO depth pre-pass ignores per-material clipping, so fall back to plain render while sectioning
     ssaoPass.output = (!AO_ON || fx === 'section') ? THREE.SSAOPass.OUTPUT.Beauty : THREE.SSAOPass.OUTPUT.Default;
@@ -6321,7 +6400,7 @@ var OSM = {"b":[{"h":37.9,"a":65093,"p":[-1398,-139,-1371,-107,-1355,-88,-1363,-
     T(0xf6f5f0, 0x424c59); T(0xe9e9e3, 0x2a323d); T(0xefede6, 0x272f3a);
     T(0xc85548, 0x7c3129, 0x40100a); T(0xd6473c, 0x892f26, 0xff5a3c);   // awnings / lanterns
     T(0x3c3a36, 0x14171b); T(0x4a4a46, 0x20242a); T(0xf2ede4, 0x8b93a0);
-    T(0xf0e6d4, 0x555e6a); T(0xcfdfe3, 0x16242e); T(0xf6f4ee, 0x8b99a9);
+    T(0xf0e6d4, 0x555e6a); T(0xc4e0e6, 0x16242e); T(0x6da4bb, 0x22394a); T(0x93c3d3, 0x1c2f3e); T(0xf6f4ee, 0x8b99a9);
     T(0xd6604f, 0x87352c); T(0xf2f1ec, 0x9aa5b2); T(0x6f8fb5, 0x46607e); T(0xe8b64c, 0x8a6a2a); T(0x7fb069, 0x3d5c35);
     T(COL.line, 0x0c0f13); T(COL.lineSoft, 0x39424e);
   })();
@@ -6368,7 +6447,22 @@ var OSM = {"b":[{"h":37.9,"a":65093,"p":[-1398,-139,-1371,-107,-1355,-88,-1363,-
   });
 
   // ---------- real-time Shenzhen weather (Open-Meteo) ----------
-  var WX = { on: false, dim: 0, fogAmt: 0, rain: null, timer: null, label: '' };
+  var WX = { on: false, dim: 0, fogAmt: 0, rain: null, timer: null, label: '', isDay: true };
+  // solar position for Shenzhen (22.483N, 113.912E) at the current local time
+  function shenzhenSun() {
+    var now = new Date();
+    var start = new Date(Date.UTC(now.getUTCFullYear(), 0, 0));
+    var doy = (now - start) / 86400000;
+    var rad = Math.PI / 180;
+    var decl = -23.44 * rad * Math.cos(2 * Math.PI / 365 * (doy + 10));
+    var solarHours = now.getUTCHours() + now.getUTCMinutes() / 60 + 113.912 / 15;
+    var H = (solarHours - 12) * 15 * rad;
+    var lat = 22.483 * rad;
+    var alt = Math.asin(Math.sin(lat) * Math.sin(decl) + Math.cos(lat) * Math.cos(decl) * Math.cos(H));
+    var az = Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(lat) - Math.tan(decl) * Math.cos(lat)); // 0 = due south, + toward west
+    return { alt: alt, az: az };
+  }
+  var duskCol = new THREE.Color(0xffb27a), noonCol = new THREE.Color(0xffffff);
   var WXNAMES = { 0: '晴', 1: '多云', 2: '多云', 3: '阴', 45: '雾', 48: '雾', 51: '毛毛雨', 53: '小雨', 55: '小雨',
     56: '冻雨', 57: '冻雨', 61: '小雨', 63: '中雨', 65: '大雨', 66: '冻雨', 67: '冻雨', 71: '小雪', 73: '中雪',
     75: '大雪', 77: '雪', 80: '阵雨', 81: '阵雨', 82: '暴雨', 85: '阵雪', 86: '阵雪', 95: '雷阵雨', 96: '雷阵雨', 99: '雷暴' };
@@ -6394,6 +6488,7 @@ var OSM = {"b":[{"h":37.9,"a":65093,"p":[-1398,-139,-1371,-107,-1355,-88,-1363,-
     var storm = code >= 95;
     WX.dim = storm ? 0.75 : (rain ? 0.55 : (code === 3 ? 0.45 : (code >= 1 && code <= 2 ? 0.15 : (code >= 45 && code <= 48 ? 0.5 : 0))));
     WX.fogAmt = (code >= 45 && code <= 48) ? 1 : (rain ? 0.5 : 0);
+    WX.isDay = !!isDay;
     if (WX.on) applyNight(!isDay);
     if (!WX.rain && rain) WX.rain = buildRain();
     if (WX.rain) {
@@ -6525,21 +6620,41 @@ var OSM = {"b":[{"h":37.9,"a":65093,"p":[-1398,-139,-1371,-107,-1355,-88,-1363,-
     [940, 1360, -1163, -1137]  // Old town main street
   ];
   var WALK_BLOCKS = [
-    [-81, 82, -68, 68], [-132, 100, -207, -158], [40, 76, 56, 94], [-74, -54, -92, -60],
+    [-81, 82, -68, 68, 8],                       // podium walls (ground level only — the roof deck is walkable)
+    [-132, 100, -207, -158], [53, 63.5, 56, 94], // hotel; planted cascade between the twin stair runs
     [-113, -95, 79, 89], [-157, -105, 80, 96], [-300, -228, -45, 5], [-48, 44, -462, -298],
     [-207, -157, -437, -411], [-198, -154, -380, -356], [-213, -163, -319, -293],
     [8, 64, -425, -399], [22, 78, -368, -340], [10, 62, -315, -289],
     [-157, -139, -467, -449], [-135, -101, -350, -326],
     [-545, -195, 558, 660], [-242, -198, 675, 705], [-599, -565, 703, 729], [-597, -423, 712, 760],
     [242, 268, -800, -732], [280, 306, -800, -732], [318, 344, -800, -732],
-    [356, 382, -800, -732], [394, 420, -800, -732], [432, 458, -800, -732]
+    [356, 382, -800, -732], [394, 420, -800, -732], [432, 458, -800, -732],
+    [-47, 51, -29, 25], [-10, 39, -63, -40], [-36, 9, 28, 63], [54, 79, -8, 20]   // pavilion volumes on the roof
   ];
+  // walking surface height: 0 = ground; grand stairs are ramps up to the roof garden (+16.8)
+  function groundY(x, z) {
+    if (z >= 60 && z <= 92 && ((x >= 44 && x <= 52) || (x >= 64 && x <= 72))) {
+      return Math.min(16.8, 16.8 * (92 - z) / 32);                       // SE twin stair runs
+    }
+    if (x >= -74 && x <= -54 && z >= -90 && z <= -62) {
+      return Math.min(16.8, Math.max(0, 16.8 * (z + 90) / 25.5));        // NW grand stair
+    }
+    if (x >= -77 && x <= 78 && z >= -63 && z <= 63) return 16.8;         // roof garden deck
+    return 0;
+  }
   function inRect(r, x, z) { return x >= r[0] && x <= r[1] && z >= r[2] && z <= r[3]; }
-  function canWalk(x, z) {
-    var ok = false;
-    for (var i = 0; i < WALK_AREAS.length; i++) { if (inRect(WALK_AREAS[i], x, z)) { ok = true; break; } }
+  function canWalk(x, z, wy) {
+    var gy = groundY(x, z);
+    var ok = gy > 0.1;
+    if (!ok) {
+      for (var i = 0; i < WALK_AREAS.length; i++) { if (inRect(WALK_AREAS[i], x, z)) { ok = true; break; } }
+    }
     if (!ok) return false;
-    for (var j = 0; j < WALK_BLOCKS.length; j++) { if (inRect(WALK_BLOCKS[j], x, z)) return false; }
+    for (var j = 0; j < WALK_BLOCKS.length; j++) {
+      var b = WALK_BLOCKS[j];
+      if (b.length > 4 && wy >= b[4]) continue;
+      if (inRect(b, x, z)) return false;
+    }
     return true;
   }
   var hintEl = document.getElementById('hint');
@@ -6624,11 +6739,15 @@ var OSM = {"b":[{"h":37.9,"a":65093,"p":[-1398,-139,-1371,-107,-1355,-88,-1363,-
     var sinY = Math.sin(WALK.yaw), cosY = Math.cos(WALK.yaw);
     var dx = (sinY * f - cosY * r) * run * dt;
     var dz = (cosY * f + sinY * r) * run * dt;
-    if (canWalk(WALK.pos.x + dx, WALK.pos.z)) WALK.pos.x += dx;
-    if (canWalk(WALK.pos.x, WALK.pos.z + dz)) WALK.pos.z += dz;
+    var curY = groundY(WALK.pos.x, WALK.pos.z);
+    var nx = WALK.pos.x + dx;
+    if (canWalk(nx, WALK.pos.z, curY) && Math.abs(groundY(nx, WALK.pos.z) - curY) < 3) WALK.pos.x = nx;
+    var nz = WALK.pos.z + dz;
+    curY = groundY(WALK.pos.x, WALK.pos.z);
+    if (canWalk(WALK.pos.x, nz, curY) && Math.abs(groundY(WALK.pos.x, nz) - curY) < 3) WALK.pos.z = nz;
     var moving = len > 0.05;
     WALK.bob += moving ? dt * 7.5 : 0;
-    var eye = 1.7 + (moving ? Math.sin(WALK.bob) * 0.045 : 0);
+    var eye = groundY(WALK.pos.x, WALK.pos.z) + 1.7 + (moving ? Math.sin(WALK.bob) * 0.045 : 0);
     camera.position.set(WALK.pos.x, eye, WALK.pos.z);
     var cp = Math.cos(WALK.pitch);
     lookCur.set(WALK.pos.x + sinY * cp * 10, eye + Math.sin(WALK.pitch) * 10, WALK.pos.z + cosY * cp * 10);
@@ -6777,6 +6896,21 @@ var OSM = {"b":[{"h":37.9,"a":65093,"p":[-1398,-139,-1371,-107,-1355,-88,-1363,-
       if (b.g.position.x > 780) b.g.position.x = -90;    // keep clear of the Prince Bay coast strip
       if (b.g.position.x < -90) b.g.position.x = 780;
     });
+    if (PEOPLE) {
+      for (var wi = 0; wi < PEOPLE.defs.length; wi++) {
+        var wd = PEOPLE.defs[wi];
+        var L = wd.x1 - wd.x0;
+        var m2 = (wt * wd.v + wd.ph) % (2 * L);
+        var px2 = m2 < L ? wd.x0 + m2 : wd.x1 - (m2 - L);
+        PEOPLE.mtx.makeScale(wd.s, wd.s, wd.s);
+        PEOPLE.mtx.setPosition(px2, wd.y + 0.58 * wd.s, wd.z);
+        PEOPLE.bodyI.setMatrixAt(PEOPLE.base + wi, PEOPLE.mtx);
+        PEOPLE.mtx.setPosition(px2, wd.y + 1.32 * wd.s, wd.z);
+        PEOPLE.headI.setMatrixAt(PEOPLE.base + wi, PEOPLE.mtx);
+      }
+      PEOPLE.bodyI.instanceMatrix.needsUpdate = true;
+      PEOPLE.headI.instanceMatrix.needsUpdate = true;
+    }
     if (SND.on && SND.rainGain) {
       var rTarget = (WX.rain && WX.rain.visible) ? 0.05 : 0;
       SND.rainGain.gain.value += (rTarget - SND.rainGain.gain.value) * Math.min(dt * 2, 1);
@@ -6829,6 +6963,17 @@ var OSM = {"b":[{"h":37.9,"a":65093,"p":[-1398,-139,-1371,-107,-1355,-88,-1363,-
   animate();
 
   // debug snapshot helpers
+  window.__scene = scene;
+  window.__waterdbg = function () {
+    return JSON.stringify({
+      color: M.water.color.getHexString(),
+      visible: water.visible,
+      pos: water.position.toArray(),
+      inScene: water.parent === S,
+      clip: !!(M.water.clippingPlanes && M.water.clippingPlanes.length),
+      userDay: M.water.userData.day
+    });
+  };
   window.__plainsnap = function (w) {
     w = w || 960;
     renderer.render(scene, camera);
@@ -6858,8 +7003,10 @@ var OSM = {"b":[{"h":37.9,"a":65093,"p":[-1398,-139,-1371,-107,-1355,-88,-1363,-
     mode = 'focus'; stepFocus(0); mode = 'manual';
     return window.__snap(w);
   };
-  window.__walkdbg = function (steps, key, w) {
+  window.__walkdbg = function (steps, key, w, px, pz, yaw, pitch) {
     if (!WALK.on) enterWalk();
+    if (px !== undefined) { WALK.pos.set(px, 0, pz); WALK.yaw = yaw !== undefined ? yaw : WALK.yaw; }
+    if (pitch !== undefined) WALK.pitch = pitch;
     WALK.keys[key || 'w'] = true;
     for (var i = 0; i < (steps || 60); i++) updateWalk(1 / 60);
     WALK.keys[key || 'w'] = false;
